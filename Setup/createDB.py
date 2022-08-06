@@ -3,14 +3,17 @@ import configparser
 import sys
 
 # add Modules folder to system path
+from Modules.importconfig import Server_ID, DB_user, DB_pass, DB_host, DB_port, DB_name
+
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 from importconfig import *
 
 
 def connect_mariadb():
+    global mariaCon
+    global mariaCur
     try:
-        global mariaCon
         mariaCon = mariadb.connect(
             user=DB_user,
             password=DB_pass,
@@ -22,7 +25,7 @@ def connect_mariadb():
     except mariadb.Error as e:
         print(f"Error connecting to MariaDB Platform: {e}")
         sys.exit(1)
-    global mariaCur
+
     mariaCur = mariaCon.cursor()
 
 
