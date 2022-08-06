@@ -81,7 +81,34 @@ if __name__ == '__main__':
                     PRIMARY KEY (`ID`) USING BTREE,
                     UNIQUE INDEX `conanPlatformId` (`conanPlatformId`) USING HASH,
                     UNIQUE INDEX `steamPlatformId` (`steamPlatformId`) USING HASH
-            )"""
+            )
+            COLLATE='utf8mb4_general_ci'
+            ENGINE=InnoDB"""
         )
         changes_made = True
     if not check_if_table_exists("order_processing"):
+        print("Creating order_processing table...")
+        mariaCur.execute(
+            """CREATE TABLE `order_processing` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT,
+                    `order_number` INT(11) NOT NULL,
+                    `order_value` INT(11) NOT NULL,
+                    `itemid` INT(11) NOT NULL,
+                    `count` INT(11) NOT NULL,
+                    `purchaser_platformid` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+                    `purchaser_steamid` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+                    `in_process` INT(11) NULL DEFAULT NULL,
+                    `completed` INT(11) NULL DEFAULT NULL,
+                    `refunded` INT(11) NULL DEFAULT NULL,
+                    `order_date` DATETIME NULL DEFAULT current_timestamp(),
+                    `last_attempt` DATETIME NULL DEFAULT NULL,
+                    `completed_date` DATETIME NULL DEFAULT NULL,
+                    `discordChannelID` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+                    `discordMessageID` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+                    `orderCompleteNoticeSent` INT(11) NULL DEFAULT NULL,
+                    PRIMARY KEY (`id`) USING BTREE
+                )
+                COLLATE='utf8mb4_general_ci'
+                ENGINE=InnoDB"""
+            )
+        changes_made = True
