@@ -81,34 +81,116 @@ if __name__ == '__main__':
                     PRIMARY KEY (`ID`) USING BTREE,
                     UNIQUE INDEX `conanPlatformId` (`conanPlatformId`) USING HASH,
                     UNIQUE INDEX `steamPlatformId` (`steamPlatformId`) USING HASH
-            )
-            COLLATE='utf8mb4_general_ci'
-            ENGINE=InnoDB"""
+            )"""
         )
         changes_made = True
     if not check_if_table_exists("order_processing"):
-        print("Creating order_processing table...")
-        mariaCur.execute(
-            """CREATE TABLE `order_processing` (
-                    `id` INT(11) NOT NULL AUTO_INCREMENT,
-                    `order_number` INT(11) NOT NULL,
-                    `order_value` INT(11) NOT NULL,
-                    `itemid` INT(11) NOT NULL,
-                    `count` INT(11) NOT NULL,
-                    `purchaser_platformid` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
-                    `purchaser_steamid` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
-                    `in_process` INT(11) NULL DEFAULT NULL,
-                    `completed` INT(11) NULL DEFAULT NULL,
-                    `refunded` INT(11) NULL DEFAULT NULL,
-                    `order_date` DATETIME NULL DEFAULT current_timestamp(),
-                    `last_attempt` DATETIME NULL DEFAULT NULL,
-                    `completed_date` DATETIME NULL DEFAULT NULL,
-                    `discordChannelID` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
-                    `discordMessageID` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
-                    `orderCompleteNoticeSent` INT(11) NULL DEFAULT NULL,
-                    PRIMARY KEY (`id`) USING BTREE
-                )
-                COLLATE='utf8mb4_general_ci'
-                ENGINE=InnoDB"""
-            )
-        changes_made = True
+
+    # Maria SQL for create tables
+    accounts = """
+        CREATE TABLE accounts IF NOT EXISTS (
+            id					MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the accounts Table',
+            discordID 			CHAR(100)							COMMENT 'Needed to link the players conanUserId to their discordID to allow them to buy items in discord to be sent to their Conan player',
+            conanplayer 		CHAR(100)							COMMENT 'Not sure exactly what this is',
+            conanUserId 		CHAR(100) NOT NULL					COMMENT 'Not sure exactly what this is', 
+            conanPlatformId 	CHAR(100) NOT NULL UNIQUE			COMMENT 'Not sure exactly what this is',
+            walletBalance 		MEDIUMINT NOT NULL DEFAULT 0 		COMMENT 'Current balance of the players account',
+            steamPlatformId 	CHAR(100)							COMMENT 'Not sure exactly what this is',
+            earnRateMultiplier 	INT DEFAULT 1 						COMMENT 'Based on the players subscription level, if they do not have one, DEFAULT to 1', 
+            lastUpdated 		DATETIME							COMMENT 'Last time this record was updated',
+            PRIMARY KEY (id)
+        );
+    """
+    order_processing = """
+        CREATE TABLE order_processing IF NOT EXISTS (
+            id						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the order_processing Table',
+            order_number			INT NOT NULL						COMMENT 'FK: Unique identifier for the the specific order the player makes',
+            itemid		 			INT NOT NULL						COMMENT 'FK: Unique identifier for the specific item',
+            counts		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
+            purchaser_platformid 	CHAR(100) NOT NULL UNIQUE			COMMENT 'Not sure exactly what this is',
+            purchaser_steamid 		CHAR(100) NOT NULL UNIQUE			COMMENT 'Not sure exactly what this is',
+            in_process	 			INT NOT NULL						COMMENT 'Should this be a boolean (true/false)?',
+            completed	 			INT NOT NULL						COMMENT 'Should this be a boolean (true/false)?',
+            refunded	 			INT NOT NULL						COMMENT 'Should this be a boolean (true/false)?',
+            order_date	 			DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the order was received by the shop bot',
+            last_attempt 			DATETIME 							COMMENT 'Last time the shop bot tried to deliver the item to the player',
+            completed_date	 		DATETIME							COMMENT 'Date and time of when the order was confirmed complete by the shop bot',
+            discordChannelID 		CHAR(100) NOT NULL UNIQUE			COMMENT 'Not sure exactly what this is',
+            discordMessageID 		CHAR(100) NOT NULL UNIQUE			COMMENT 'Not sure exactly what this is',
+            orderCompleteNoticeSent	INT NOT NULL						COMMENT 'Should this be a boolean (true/false)?',
+            PRIMARY KEY (id)
+        );
+    """
+    registration_codes = """
+        CREATE TABLE registration_codes IF NOT EXISTS (
+            ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the registration_codes Table',
+            discordID 				CHAR(100)							COMMENT 'Needed to link the players conanUserId to their discordID to allow them to buy items in discord to be sent to their Conan player',
+            discordObjID 			CHAR(100) 							COMMENT 'Not sure exactly what this is',
+            registrationCode 		CHAR(100) NOT NULL UNIQUE			COMMENT 'A Unique code that is sent to the player to register their discordID with their character',
+            status	 				INT NOT NULL DEFAULT 0				COMMENT 'Linked to status table?',
+            PRIMARY KEY (ID)
+        );
+    """
+    servers = """
+        CREATE TABLE servers IF NOT EXISTS (
+            ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the servers Table',
+            serverName 				CHAR(100) NOT NULL UNIQUE			COMMENT 'Name of the server',
+            enabled 				CHAR(100) NOT NULL 					COMMENT 'If the server is active or not',
+            dedicated 				CHAR(100) NOT NULL 					COMMENT 'If the server is dedicated or not',
+            rcon_host 				CHAR(100) NOT NULL 					COMMENT 'RCON IP address',
+            rcon_port	 			INT NOT NULL						COMMENT 'RCON port number',
+            rcon_pass 				CHAR(100) NOT NULL 					COMMENT 'Password for RCON',
+            steamQueryPort 			INT NOT NULL						COMMENT 'Steam Query port number',
+            databaseLocation		CHAR(100) NOT NULL 					COMMENT 'Not sure exactly what this is',
+            logLocation				CHAR(100) NOT NULL 					COMMENT 'Not sure exactly what this is',
+            killLogChannel			CHAR(100) NOT NULL 					COMMENT 'Not sure exactly what this is',
+            PRIMARY KEY (ID)
+        );
+    """
+    shop_items = """
+        CREATE TABLE shop_items IF NOT EXISTS (
+            ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the shop_items Table',
+            itemName 				CHAR(100) NOT NULL UNIQUE			COMMENT 'Name of the item',
+            price		 			INT NOT NULL DEFAULT 0				COMMENT 'Price of the item',
+            itemId		 			INT NOT NULL UNIQUE					COMMENT 'Unique item ID for the discord list **Why cant use ID**',
+            counts		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
+            enabled		 			INT NOT NULL DEFAULT 0				COMMENT 'Make the item available to the store',
+            itemType 				CHAR(100) NOT NULL UNIQUE			COMMENT 'Type of the item',
+            kitId		 			MEDIUMINT NULL						COMMENT 'Not sure exactly what this is',
+            PRIMARY KEY (ID)
+        );
+    """
+    shop_kits = """
+        CREATE TABLE shop_kits IF NOT EXISTS (
+            ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the shop_kits Table',
+            kitId		 			INT NOT NULL UNIQUE					COMMENT 'Unique item ID for the discord list **Why cant use ID**',
+            kitName 				CHAR(100) NOT NULL UNIQUE			COMMENT 'Name of the item',
+            itemId		 			INT NOT NULL						COMMENT 'Unique item ID for the discord list **Why cant use ID**',
+            counts		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
+            PRIMARY KEY (ID)
+        );
+    """
+    shop_log = """
+        CREATE TABLE shop_log IF NOT EXISTS (
+            ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the shop_log Table',
+            order_number 			MEDIUMINT NOT NULL					COMMENT 'Unique item ID for the discord list **Why cant use ID**',
+            item 					CHAR(100) NOT NULL					COMMENT 'Item which was purchased in the order',
+            counts		 			CHAR(100) NOT NULL					COMMENT 'How many of the item',
+            price		 			CHAR(100) NOT NULL					COMMENT 'Price of the item',
+            player		 			CHAR(100) NOT NULL					COMMENT 'Player of the order',
+            server		 			CHAR(100) NOT NULL					COMMENT 'Server the order was placed from',
+            status		 			CHAR(100) NOT NULL					COMMENT 'Server the order was placed from',
+            logTimestamp 			DATETIME NOT NULL					COMMENT 'Timestamp of when the order was processed',
+            PRIMARY KEY (ID)
+        );
+    """
+
+    # Add tables to the table list
+    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log]
+
+    # Attempt to execute the create table queries
+    for i in tableList:
+        try:
+            mariaCur.execute(tableList[i])
+        except mariadb.Error as e:
+            print(f"Error: {e}")
