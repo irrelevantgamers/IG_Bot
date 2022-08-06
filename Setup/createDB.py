@@ -2,10 +2,11 @@ import mariadb
 import configparser
 import sys
 
-#add Modules folder to system path
+# add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
-#read in the config variables from importconfig.py
+# read in the config variables from importconfig.py
 from importconfig import *
+
 
 def connect_mariadb():
     try:
@@ -24,9 +25,11 @@ def connect_mariadb():
     global mariaCur
     mariaCur = mariaCon.cursor()
 
+
 def close_mariaDB():
     mariaCur.close()
     mariaCon.close()
+
 
 def check_if_table_exists(table_name):
     mariaCur.execute(f"SHOW TABLES LIKE '{table_name}'")
@@ -34,6 +37,7 @@ def check_if_table_exists(table_name):
         return True
     else:
         return False
+
 
 if __name__ == '__main__':
     print("Connecting to MariaDB...")
@@ -416,7 +420,12 @@ if __name__ == '__main__':
     """
 
     # Add tables to the table list
-    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders, server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals, server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats, server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations, server_activeTeleports, server_event_details, server_insults, server_teleportLog]
+    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log,
+                 server_currentusers, server_historicalusers, server_jailinfo, server_offenders, server_protected_areas,
+                 server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals, server_wanted_players,
+                 server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats, server_ArenaPrize_pool,
+                 server_ArenaPrizes, server_Arenas, server_homelocations, server_activeTeleports, server_event_details,
+                 server_insults, server_teleportLog]
 
     # Attempt to execute the create table queries
     print("Creating tables if they don't exist...")
