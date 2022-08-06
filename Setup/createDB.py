@@ -279,8 +279,28 @@ if __name__ == '__main__':
             );
     """
 
+    server_kill_log = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_kill_log (
+            id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the kill_log Table',
+            player          CHAR(100) NOT NULL COMMENT 'Name of the player',
+            player_id       CHAR(100) NOT NULL COMMENT 'conan player ID of the player',
+            player_level    MEDIUMINT NOT NULL COMMENT 'Level of the player',
+            player_clan     CHAR(100) NOT NULL COMMENT 'Clan of the player',
+            victim          CHAR(100) NOT NULL COMMENT 'Name of the victim',
+            victim_id       CHAR(100) NOT NULL COMMENT 'conan player ID of the victim',
+            victim_level    MEDIUMINT NOT NULL COMMENT 'Level of the victim',
+            victim_clan     CHAR(100) NOT NULL COMMENT 'Clan of the victim',
+            kill_location_x CHAR(100) NOT NULL COMMENT 'X position of the kill',
+            kill_location_y CHAR(100) NOT NULL COMMENT 'Y position of the kill',
+            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the kill was logged',
+            PRIMARY KEY (id)
+            );
+    """
+
+
+
     # Add tables to the table list
-    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders, server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals, server_wanted_players]
+    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders, server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals, server_wanted_players, server_kill_log]
 
     # Attempt to execute the create table queries
     print("Creating tables if they don't exist...")
