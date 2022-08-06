@@ -292,15 +292,131 @@ if __name__ == '__main__':
             victim_clan     CHAR(100) NOT NULL COMMENT 'Clan of the victim',
             kill_location_x CHAR(100) NOT NULL COMMENT 'X position of the kill',
             kill_location_y CHAR(100) NOT NULL COMMENT 'Y position of the kill',
+            kill_type       CHAR(100) NOT NULL COMMENT 'Type of the kill (Normal, Arena, Event)',
             loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the kill was logged',
             PRIMARY KEY (id)
             );
     """
 
+    server_ArenaParticipants = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaParticipants (
+            player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
+            conanUserId     CHAR(100) NOT NULL COMMENT 'conan user ID of the player',
+            platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
+            steamPlatformId CHAR(100) NOT NULL COMMENT 'Steam Platform ID of the player',
+            arenaName       CHAR(100) NOT NULL COMMENT 'Name of the arena',
+            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
+            );
+    """
 
+    server_ArenaParticipants_stats = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaParticipants_stats (
+            player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
+            points          MEDIUMINT NOT NULL COMMENT 'Points of the player',
+            kills           MEDIUMINT NOT NULL COMMENT 'Kills of the player',
+            deaths          MEDIUMINT NOT NULL COMMENT 'Deaths of the player',
+            platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player'
+            );
+    """
+
+    server_ArenaPrize_pool = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaPrize_pool (
+            place           MEDIUMINT NOT NULL COMMENT 'Place required to win prize',
+            PrizeName       CHAR(100) NOT NULL COMMENT 'Name of the prize',
+            PrizeCount      MEDIUMINT NOT NULL COMMENT 'Number of the prize to give at once',
+            PrizeItemID     MEDIUMINT NOT NULL COMMENT 'Item ID of the prize'
+            );
+    """
+
+    server_ArenaPrizes = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaPrizes (
+            Place           MEDIUMINT NOT NULL COMMENT 'Place of the player',
+            PrizeName       CHAR(100) NOT NULL COMMENT 'Name of the prize',
+            PrizeCount      MEDIUMINT NOT NULL COMMENT 'Number of the prize to give at once',
+            PrizeItemID     MEDIUMINT NOT NULL COMMENT 'Item ID of the prize'
+            );
+    """
+
+    server_Arenas = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_Arenas (
+            id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the arenas Table',
+            Name            CHAR(100) NOT NULL COMMENT 'Name of the arena',
+            Active          BOOL NOT NULL COMMENT 'If the arena is active',
+            MinX            MEDIUMINT NOT NULL COMMENT 'Minimum X position of the arena',
+            MinY            MEDIUMINT NOT NULL COMMENT 'Minimum Y position of the arena',
+            MaxX            MEDIUMINT NOT NULL COMMENT 'Maximum X position of the arena',
+            MaxY            MEDIUMINT NOT NULL COMMENT 'Maximum Y position of the arena',
+            SpawnPoint1     CHAR(100) NOT NULL COMMENT 'Spawn point 1 of the arena',
+            SpawnPoint2     CHAR(100) NOT NULL COMMENT 'Spawn point 2 of the arena',
+            SpawnPoint3     CHAR(100) NOT NULL COMMENT 'Spawn point 3 of the arena',
+            SpawnPoint4     CHAR(100) NOT NULL COMMENT 'Spawn point 4 of the arena',
+            SpawnPoint5     CHAR(100) NOT NULL COMMENT 'Spawn point 5 of the arena',
+            SpawnPoint6     CHAR(100) NOT NULL COMMENT 'Spawn point 6 of the arena',
+            StartingPoints  MEDIUMINT NOT NULL COMMENT 'Starting points for each player of the arena',
+            HomeAllowed     BOOL NOT NULL COMMENT 'If the arena allows returning to the home base',
+            MaxScore        MEDIUMINT NOT NULL COMMENT 'Maximum score of the arena',
+            Primary Key (id)
+            );
+    """
+    server_homelocations = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_homelocations (
+            Player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
+            HomeLocation    CHAR(100) NOT NULL COMMENT 'Home location of the player',
+            platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
+            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
+            );
+    """
+
+    server_activeTeleports = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_activeTeleports (
+            conid           CHAR(100) NOT NULL COMMENT 'conan ID of the player',
+            player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
+            srcLocation     CHAR(100) NOT NULL COMMENT 'Source location of the player',
+            dstLocation     CHAR(100) NOT NULL COMMENT 'Destination location of the player',
+            platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
+            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
+            );
+    """
+
+    server_event_details = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_event_details (
+            ID              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the event_details Table',
+            Name            CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the event',
+            GeneralLocation CHAR(100) NOT NULL COMMENT 'General location of the event',
+            BlueTeamLocation CHAR(100) NOT NULL COMMENT 'Blue team location of the event',
+            RedTeamLocation CHAR(100) NOT NULL COMMENT 'Red team location of the event',
+            SpectateLocation CHAR(100) NOT NULL COMMENT 'Spectate location of the event',
+            Active          BOOL NOT NULL COMMENT 'If the event is active',
+            MinX            MEDIUMINT NOT NULL COMMENT 'Minimum X position of the event',
+            MinY            MEDIUMINT NOT NULL COMMENT 'Minimum Y position of the event',
+            MaxX            MEDIUMINT NOT NULL COMMENT 'Maximum X position of the event',
+            MaxY            MEDIUMINT NOT NULL COMMENT 'Maximum Y position of the event',
+            HomeAllowed     BOOL NOT NULL COMMENT 'If the event allows returning to the home base',
+            PRIMARY KEY (ID)
+            );
+    """
+
+    server_insults = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_insults (
+            ID              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the insults Table',
+            Insult          CHAR(100) NOT NULL UNIQUE COMMENT 'Insult',
+            PRIMARY KEY (ID)
+            );
+    """
+
+    server_teleportLog = f"""
+        CREATE TABLE IF NOT EXISTS {Server_ID}_teleportLog (
+            conid           CHAR(100) NOT NULL COMMENT 'conan ID of the player',
+            player          CHAR(100) NOT NULL COMMENT 'Name of the player',
+            srcLocation     CHAR(100) NOT NULL COMMENT 'Source location of the player',
+            dstLocation     CHAR(100) NOT NULL COMMENT 'Destination location of the player',
+            platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
+            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
+            );
+    """
 
     # Add tables to the table list
-    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders, server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals, server_wanted_players, server_kill_log]
+    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders, server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals, server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats, server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations, server_activeTeleports, server_event_details, server_insults, server_teleportLog]
 
     # Attempt to execute the create table queries
     print("Creating tables if they don't exist...")
