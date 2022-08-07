@@ -7,10 +7,11 @@ global DB_port
 global DB_user
 global DB_pass
 global DB_name
-global Server_ID
+global Server_Name
 global Server_RCON_Host
 global Server_RCON_Port
 global Server_RCON_Pass
+global Server_SteamQuery_Port
 global Server_Game_DB_Location
 global Server_Game_Log_Location
 global Discord_Killlog_Channel
@@ -40,10 +41,11 @@ DB_port = int(config["MariaDB"]["Port"])
 DB_user = config["MariaDB"]["User"]
 DB_pass = config["MariaDB"]["Pass"]
 DB_name = config["MariaDB"]["DatabaseName"]
-Server_ID = config["Server"]["ID"]
+Server_Name = config["Server"]["Name"]
 Server_RCON_Host = config["Server"]["RCON_Host"]
-Server_RCON_Port = config["Server"]["RCON_Port"]
+Server_RCON_Port = int(config["Server"]["RCON_Port"])
 Server_RCON_Pass = config["Server"]["RCON_Pass"]
+Server_SteamQuery_Port = int(config["Server"]["SteamQuery_Port"])
 Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
 Discord_Killlog_Channel = config["Discord"]["Killlog_Channel"]

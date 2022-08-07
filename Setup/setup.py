@@ -3,8 +3,6 @@ import configparser
 import sys
 
 # add Modules folder to system path
-from Modules.importconfig import Server_ID, DB_user, DB_pass, DB_host, DB_port, DB_name
-
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 from importconfig import *
@@ -95,14 +93,15 @@ if __name__ == '__main__':
             ID						                MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the servers Table',
             serverName 				                CHAR(100) NOT NULL UNIQUE			COMMENT 'Name of the server',
             enabled 				                BOOL NOT NULL 					    COMMENT 'If the server is active or not',
-            dedicated 				                CHAR(100) NOT NULL 					COMMENT 'If the server is dedicated or not',
+            dedicated 				                BOOL NOT NULL 					COMMENT 'If the server is dedicated or not',
             rcon_host 				                CHAR(100) NOT NULL 					COMMENT 'RCON IP address',
             rcon_port	 			                INT NOT NULL						COMMENT 'RCON port number',
             rcon_pass 				                CHAR(100) NOT NULL 					COMMENT 'Password for RCON',
             steamQueryPort 			                INT NOT NULL						COMMENT 'Steam Query port number',
-            databaseLocation		                CHAR(100) NOT NULL 					COMMENT 'path to the game server database file',
-            logLocation				                CHAR(100) NOT NULL 					COMMENT 'path to the game server log file',
+            databaseLocation		                CHAR(255) NOT NULL 					COMMENT 'path to the game server database file',
+            logLocation				                CHAR(255) NOT NULL 					COMMENT 'path to the game server log file',
             Killlog_Channel			                CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the kill log to',
+            Killlog_Last_Event_Time                 TIMESTAMP NOT NULL DEFAULT 0 COMMENT 'Last time the kill event was sent to the log',
             Solo_LeaderBoardAll_Channel		        CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board all time to',
             Solo_LeaderBoard7Days_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 7 days to',
             Solo_LeaderBoard30Days_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 30 days to',
@@ -157,7 +156,7 @@ if __name__ == '__main__':
     """
 
     server_currentusers = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_currentusers (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_currentusers (
             conid           CHAR(100) NOT NULL UNIQUE COMMENT 'Connection ID of the player',
             player          CHAR(100) COMMENT 'Name of the player',
             userid          CHAR(100) COMMENT 'Funcom ID of the player',
@@ -169,7 +168,7 @@ if __name__ == '__main__':
             );
             """
     server_historicalusers = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_historicalusers (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_historicalusers (
             conid           CHAR(100) NOT NULL COMMENT 'Connection ID of the player',
             player          CHAR(100) COMMENT 'Name of the player',
             userid          CHAR(100) COMMENT 'Funcom ID of the player',
@@ -181,7 +180,7 @@ if __name__ == '__main__':
             );
             """
     server_jailinfo = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_jailinfo (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_jailinfo (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the jailinfo Table',
             name            CHAR(100) NOT NULL COMMENT 'Name of the jail cell',
             spawnLocation   CHAR(100) NOT NULL COMMENT 'Spawn location for the jail cell',
@@ -193,7 +192,7 @@ if __name__ == '__main__':
             );
     """
     server_offenders = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_offenders (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_offenders (
         player          CHAR(100) NOT NULL COMMENT 'Name of the player',
         platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
         current_strikes         MEDIUMINT NOT NULL COMMENT 'Number of strikes the player has',
@@ -203,7 +202,7 @@ if __name__ == '__main__':
         """
 
     server_protected_areas = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_protected_areas (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_protected_areas (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the protected_areas Table',
             name            CHAR(100) NOT NULL COMMENT 'Name of the protected area',
             minX            CHAR(100) NOT NULL COMMENT 'Minimum X position of the protected area',
@@ -215,7 +214,7 @@ if __name__ == '__main__':
     """
 
     server_recent_pvp = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_recent_pvp (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_recent_pvp (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the recent_pvp Table',
             name            CHAR(100) NOT NULL COMMENT 'Name of the pvp location',
             x               CHAR(100) NOT NULL COMMENT 'X position of the pvp location',
@@ -226,7 +225,7 @@ if __name__ == '__main__':
     """
 
     server_bans = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_bans (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_bans (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the bans Table',
             player          CHAR(100) NOT NULL COMMENT 'Name of the player',
             platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
@@ -240,7 +239,7 @@ if __name__ == '__main__':
     """
 
     server_server_buffs = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_server_buffs (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_server_buffs (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the server_buffs Table',
             name            CHAR(100) NOT NULL COMMENT 'Name of the buff',
             active          BOOL NOT NULL COMMENT 'If the buff is active',
@@ -254,7 +253,7 @@ if __name__ == '__main__':
     """
 
     server_vault_rentals = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_vault_rentals (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_vault_rentals (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the vault_rentals Table',
             name            CHAR(100) NOT NULL COMMENT 'Name of the vault',
             renterDiscordID CHAR(100) NOT NULL COMMENT 'Discord ID of the player who rented the vault',
@@ -271,7 +270,7 @@ if __name__ == '__main__':
     """
 
     server_wanted_players = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_wanted_players (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_wanted_players (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the wanted_players Table',
             player          CHAR(100) NOT NULL COMMENT 'Name of the player',
             platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
@@ -287,7 +286,7 @@ if __name__ == '__main__':
     """
 
     server_kill_log = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_kill_log (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_kill_log (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the kill_log Table',
             player          CHAR(100) NOT NULL COMMENT 'Name of the player',
             player_id       CHAR(100) NOT NULL COMMENT 'conan player ID of the player',
@@ -306,7 +305,7 @@ if __name__ == '__main__':
     """
 
     server_ArenaParticipants = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaParticipants (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_ArenaParticipants (
             player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
             conanUserId     CHAR(100) NOT NULL COMMENT 'conan user ID of the player',
             platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
@@ -317,7 +316,7 @@ if __name__ == '__main__':
     """
 
     server_ArenaParticipants_stats = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaParticipants_stats (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_ArenaParticipants_stats (
             player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
             points          MEDIUMINT NOT NULL COMMENT 'Points of the player',
             kills           MEDIUMINT NOT NULL COMMENT 'Kills of the player',
@@ -327,7 +326,7 @@ if __name__ == '__main__':
     """
 
     server_ArenaPrize_pool = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaPrize_pool (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_ArenaPrize_pool (
             place           MEDIUMINT NOT NULL COMMENT 'Place required to win prize',
             PrizeName       CHAR(100) NOT NULL COMMENT 'Name of the prize',
             PrizeCount      MEDIUMINT NOT NULL COMMENT 'Number of the prize to give at once',
@@ -336,7 +335,7 @@ if __name__ == '__main__':
     """
 
     server_ArenaPrizes = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_ArenaPrizes (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_ArenaPrizes (
             Place           MEDIUMINT NOT NULL COMMENT 'Place of the player',
             PrizeName       CHAR(100) NOT NULL COMMENT 'Name of the prize',
             PrizeCount      MEDIUMINT NOT NULL COMMENT 'Number of the prize to give at once',
@@ -345,7 +344,7 @@ if __name__ == '__main__':
     """
 
     server_Arenas = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_Arenas (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_Arenas (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the arenas Table',
             Name            CHAR(100) NOT NULL COMMENT 'Name of the arena',
             Active          BOOL NOT NULL COMMENT 'If the arena is active',
@@ -366,7 +365,7 @@ if __name__ == '__main__':
             );
     """
     server_homelocations = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_homelocations (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_homelocations (
             Player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
             HomeLocation    CHAR(100) NOT NULL COMMENT 'Home location of the player',
             platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
@@ -375,7 +374,7 @@ if __name__ == '__main__':
     """
 
     server_activeTeleports = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_activeTeleports (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_activeTeleports (
             conid           CHAR(100) NOT NULL COMMENT 'conan ID of the player',
             player          CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the player',
             srcLocation     CHAR(100) NOT NULL COMMENT 'Source location of the player',
@@ -386,7 +385,7 @@ if __name__ == '__main__':
     """
 
     server_event_details = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_event_details (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_event_details (
             ID              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the event_details Table',
             Name            CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the event',
             GeneralLocation CHAR(100) NOT NULL COMMENT 'General location of the event',
@@ -404,7 +403,7 @@ if __name__ == '__main__':
     """
 
     server_insults = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_insults (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_insults (
             ID              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the insults Table',
             Insult          CHAR(100) NOT NULL UNIQUE COMMENT 'Insult',
             PRIMARY KEY (ID)
@@ -412,7 +411,7 @@ if __name__ == '__main__':
     """
 
     server_teleportLog = f"""
-        CREATE TABLE IF NOT EXISTS {Server_ID}_teleportLog (
+        CREATE TABLE IF NOT EXISTS {Server_Name}_teleportLog (
             conid           CHAR(100) NOT NULL COMMENT 'conan ID of the player',
             player          CHAR(100) NOT NULL COMMENT 'Name of the player',
             srcLocation     CHAR(100) NOT NULL COMMENT 'Source location of the player',
@@ -438,4 +437,72 @@ if __name__ == '__main__':
         except mariadb.Error as e:
             print(f"Error: {e}")
     mariaCon.commit()
+
+    # Attempt to create server info if it doesn't exist
+    print("Creating server info if it doesn't exist...")
+    try:
+        mariaCur.execute("SELECT * FROM servers WHERE id = ?", (Server_Name,))
+        server_info = mariaCur.fetchone()
+        if server_info is None or len(server_info) == 0:
+            server_info = """
+                INSERT INTO servers (
+                    serverName, 				          
+                    enabled, 				          
+                    dedicated,			          
+                    rcon_host, 				          
+                    rcon_port,	 			          
+                    rcon_pass, 				          
+                    steamQueryPort, 			          
+                    databaseLocation,		          
+                    logLocation,				          
+                    Killlog_Channel,           
+                    Solo_LeaderBoardAll_Channel,		  
+                    Solo_LeaderBoard7Days_Channel,	
+                    Solo_LeaderBoard30Days_Channel,	
+                    Clan_LeaderBoardAll_Channel,		
+                    Clan_LeaderBoard7Days_Channel,	
+                    Clan_LeaderBoard30Days_Channel,	
+                    BuildingPieceTracking_Channel,	
+                    InventoryPieceTracking_Channel,	
+                    Wanted_Channel,              	
+                    Jail_Channel,             		
+                    Items_for_Sale_Channel,            
+                    ServerBuffs_Channel,            	
+                    VaultRental_Channel
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+
+
+
+            mariaCur.execute(server_info,(
+                Server_Name,
+                True,
+                True,
+                Server_RCON_Host,
+                Server_RCON_Port,
+                Server_RCON_Pass,
+                Server_SteamQuery_Port,
+                Server_Game_DB_Location,
+                Server_Game_Log_Location,
+                Discord_Killlog_Channel,
+                Discord_Solo_LeaderBoardAll_Channel,
+                Discord_Solo_LeaderBoard7Days_Channel,
+                Discord_Solo_LeaderBoard30Days_Channel,
+                Discord_Clan_LeaderBoardAll_Channel,
+                Discord_Clan_LeaderBoard7Days_Channel,
+                Discord_Clan_LeaderBoard30Days_Channel,
+                Discord_BuildingPieceTracking_Channel,
+                Discord_InventoryPieceTracking_Channel,
+                Discord_Wanted_Channel,
+                Discord_Jail_Channel,
+                Discord_Items_for_Sale_Channel,
+                Discord_ServerBuffs_Channel,
+                Discord_VaultRental_Channel))
+            mariaCon.commit()
+    except mariadb.Error as e:
+        print(f"Error: {e}")
+
+
+
+
+
     close_mariaDB()
