@@ -38,7 +38,7 @@ def kill_stream():
     while True:
         #read in last event time
         connect_mariadb()
-        mariaCur.execute("SELECT DatabaseLocation, Killlog_Last_Event_Time, serverName FROM servers WHERE id = ?", (Server_ID,))
+        mariaCur.execute("SELECT DatabaseLocation, Killlog_Last_Event_Time, serverName FROM servers WHERE serverName = ?", (Server_Name,))
         server_info = mariaCur.fetchone()
         if len(server_info) != 0 and server_info[0] != None:
 
