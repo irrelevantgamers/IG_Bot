@@ -12,6 +12,7 @@ global Server_RCON_Pass
 global Server_SteamQuery_Port
 global Server_Game_DB_Location
 global Server_Game_Log_Location
+global Discord_ServerLog_Channel
 global Discord_Killlog_Channel
 global Discord_Solo_LeaderBoardAll_Channel
 global Discord_Solo_LeaderBoard30Days_Channel
@@ -45,6 +46,7 @@ Server_RCON_Pass = config["Server"]["RCON_Pass"]
 Server_SteamQuery_Port = int(config["Server"]["SteamQuery_Port"])
 Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
+Discord_ServerLog_Channel = config["Discord"]["ServerLog_Channel"]
 Discord_Killlog_Channel = config["Discord"]["Killlog_Channel"]
 Discord_Solo_LeaderBoardAll_Channel = config["Discord"]["Solo_LeaderBoardAll_Channel"]
 Discord_Solo_LeaderBoard30Days_Channel = config["Discord"]["Solo_LeaderBoard30Days_Channel"]

@@ -98,6 +98,7 @@ if __name__ == '__main__':
             steamQueryPort 			                INT NOT NULL						COMMENT 'Steam Query port number',
             databaseLocation		                CHAR(255) NOT NULL 					COMMENT 'path to the game server database file',
             logLocation				                CHAR(255) NOT NULL 					COMMENT 'path to the game server log file',
+            ServerLog_Channel                       CHAR(100) NOT NULL 					COMMENT 'Discord Channel ID to send the server log to',
             Killlog_Channel			                CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the kill log to',
             Killlog_Last_Event_Time                 TIMESTAMP NOT NULL DEFAULT 0 COMMENT 'Last time the kill event was sent to the log',
             Solo_LeaderBoardAll_Channel		        CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board all time to',
@@ -460,7 +461,8 @@ if __name__ == '__main__':
                     rcon_pass, 				          
                     steamQueryPort, 			          
                     databaseLocation,		          
-                    logLocation,				          
+                    logLocation,
+                    ServerLog_Channel,				          
                     Killlog_Channel,           
                     Solo_LeaderBoardAll_Channel,		  
                     Solo_LeaderBoard7Days_Channel,	
@@ -475,7 +477,7 @@ if __name__ == '__main__':
                     Items_for_Sale_Channel,            
                     ServerBuffs_Channel,            	
                     VaultRental_Channel
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 
 
@@ -489,6 +491,7 @@ if __name__ == '__main__':
                 config.Server_SteamQuery_Port,
                 config.Server_Game_DB_Location,
                 config.Server_Game_Log_Location,
+                config.Discord_ServerLog_Channel,
                 config.Discord_Killlog_Channel,
                 config.Discord_Solo_LeaderBoardAll_Channel,
                 config.Discord_Solo_LeaderBoard7Days_Channel,
