@@ -8,18 +8,18 @@ from datetime import datetime, timedelta
 #Get server id from config file and get server info from mariadb
 sys.path.insert(0, '..\\Modules')
 #read in the config variables from importconfig.py
-from importconfig import *
+import config
 
 def connect_mariadb():
     global mariaCon
     global mariaCur
     try:
         mariaCon = mariadb.connect(
-            user=DB_user,
-            password=DB_pass,
-            host=DB_host,
-            port=DB_port,
-            database=DB_name
+            user=config.DB_user,
+            password=config.DB_pass,
+            host=config.DB_host,
+            port=config.DB_port,
+            database=config.DB_name
 
         )
     except mariadb.Error as e:
@@ -38,7 +38,7 @@ def kill_stream():
     while True:
         #read in last event time
         connect_mariadb()
-        mariaCur.execute("SELECT databaseLocation, Killlog_Last_Event_Time, serverName FROM servers WHERE serverName = ?", (Server_Name,))
+        mariaCur.execute("SELECT databaseLocation, Killlog_Last_Event_Time, serverName FROM servers WHERE serverName = ?", (config.Server_Name,))
         server_info = mariaCur.fetchone()
         if len(server_info) != 0 and server_info[0] != None:
 
@@ -144,6 +144,9 @@ def kill_stream():
 
                     #check for kill streaks
                     wantedKill = False
+                    bountyKill = False
+                    wanted_paid_amount = 0
+                    bounty_paid_amount = 0
                     if sameClan:
                         print("skipping kill streak count, same clan")
                     else:
@@ -189,27 +192,30 @@ def kill_stream():
                                     #mariaCur.execute("UPDATE {servername}_wanted_players SET bounty =? WHERE id =?".format(servername = serverid),(newbounty, playerid))
                                     #add coin for the kill
                                     if wantedLevel > 0:
-                                        wantedKill = True
-                                        mariaCur.execute("SELECT walletbalance FROM accounts WHERE conanplatformid =?",(PlayerPlatformID[0], ))
+                                        mariaCur.execute("SELECT walletbalance, earnratemultiplier FROM accounts WHERE conanplatformid =?",(PlayerPlatformID[0], ))
                                         balance = mariaCur.fetchone()
                                         if balance != None:
+                                            wantedKill = True
                                             newbalance = int(balance[0]) + newbounty
                                             mariaCur.execute("UPDATE accounts SET walletbalance =? WHERE conanplatformid =?",(newbalance, PlayerPlatformID[0]))
                                             mariaCon.commit()
                                             balance = balance[0]
-                                            newBalance = balance + 200
+                                            wanted_paid_amount = (200 * earnratemultiplier)
+                                            newBalance = balance + wanted_paid_amount
                                             mariaCur.execute("UPDATE accounts SET walletBalance =? WHERE conanplatformid =?",(newBalance, PlayerPlatformID[0]))
                                             mariaCon.commit()
                                     matchFound = 1
                                 if conanplatformid == VictimPlatformID[0]:
                                     #pay killer
-                                    #add user to mariadb account if it doesn't exist
                                     mariaCur.execute("SELECT walletBalance, earnratemultiplier FROM accounts WHERE conanplatformid = ?", (PlayerPlatformID[0], ))
                                     walletDetails = mariaCur.fetchone()
                                     if walletDetails != None:
+                                        bountykill = True
                                         walletBalance = walletDetails[0]
                                         earnratemultiplier = walletDetails[1]
-                                        newBalance = walletBalance + (bounty * earnratemultiplier)
+                                        bounty_paid_amount = (bounty * earnratemultiplier)
+                                        newBalance = walletBalance + bounty_paid_amount
+                                        
                                         mariaCur.execute("UPDATE accounts SET walletBalance=? WHERE conanplatformid = ?", (newBalance, PlayerPlatformID[0]))
                                         mariaCon.commit()
                                         #clear wanted
@@ -233,7 +239,7 @@ def kill_stream():
                     mariaCon.commit()
 
                     #record last event time to db
-                    mariaCur.execute("INSERT INTO {servername}_kill_log (player, player_id, player_level, player_clan, victim, victim_id, victim_level, victim_clan, kill_location_x, kill_location_y, kill_type, protected_area, Killlog_Last_Event_Time) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)".format(servername=serverid),(player, playerID, playerLevel, playerClan, victim, victimID, victimLevel, victimClan, KillLocationX, KillLocationY, killtype, ProtectedArea, Killlog_Last_Event_Time))
+                    mariaCur.execute("INSERT INTO {servername}_kill_log (player, player_id, player_level, player_clan, victim, victim_id, victim_level, victim_clan, kill_location_x, kill_location_y, kill_type, protected_area, wanted_kill, wanted_paid_amount, bounty_kill, bounty_paid_amount, Killlog_Last_Event_Time) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(servername=serverid),(player, playerID, playerLevel, playerClan, victim, victimID, victimLevel, victimClan, KillLocationX, KillLocationY, killtype, ProtectedArea, wantedKill, wanted_paid_amount, bountyKill, bounty_paid_amount, Killlog_Last_Event_Time))
                     #update server's last event time
                     mariaCur.execute("UPDATE servers SET Killlog_Last_Event_Time = ? WHERE serverName = ?",(Killlog_Last_Event_Time, serverid))
                     mariaCon.commit()

@@ -1,6 +1,4 @@
 import configparser
-
-
 global config
 global DB_host
 global DB_port
@@ -33,7 +31,6 @@ global Shop_StartingCash
 global Shop_PayCheck
 global Shop_PayCheck_Interval
 global Shop_CurrencyName
-
 config = configparser.ConfigParser()
 config.read("..\\config.ini")
 DB_host = config["MariaDB"]["Host"]
@@ -62,6 +59,7 @@ Discord_Jail_Channel = config["Discord"]["Jail_Channel"]
 Discord_Items_for_Sale_Channel = config["Discord"]["Items_for_Sale_Channel"]
 Discord_ServerBuffs_Channel = config["Discord"]["ServerBuffs_Channel"]
 Discord_VaultRental_Channel = config["Discord"]["VaultRental_Channel"]
+Discord_Event_Channel = config["Discord"]["Event_Channel"]
 Discord_API_KEY = config["Discord"]["API_KEY"]
 Shop_StartingCash = config["Shop"]["StartingCash"]
 Shop_PayCheck = config["Shop"]["PayCheck"]
