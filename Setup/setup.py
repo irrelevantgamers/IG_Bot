@@ -299,6 +299,9 @@ if __name__ == '__main__':
             kill_location_x CHAR(100) NOT NULL COMMENT 'X position of the kill',
             kill_location_y CHAR(100) NOT NULL COMMENT 'Y position of the kill',
             kill_type       CHAR(100) NOT NULL COMMENT 'Type of the kill (Normal, Arena, Event)',
+            protected_area  CHAR(100) COMMENT 'Protected area of the kill',
+            Killlog_Last_Event_Time DATETIME NOT NULL COMMENT 'Date and time of when the last event occurred',
+            discord_notified BOOL NOT NULL DEFAULT '0' COMMENT 'If the kill log has been notified to the discord channel',
             loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the kill was logged',
             PRIMARY KEY (id)
             );
@@ -499,7 +502,10 @@ if __name__ == '__main__':
                 Discord_VaultRental_Channel))
             mariaCon.commit()
     except mariadb.Error as e:
-        print(f"Error: {e}")
+        if "Duplicate entry" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
 
 
 
