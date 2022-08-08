@@ -1,15 +1,16 @@
 import configparser
+
+
 global config
 global DB_host
 global DB_port
 global DB_user
 global DB_pass
 global DB_name
-global Server_Name
+global Server_ID
 global Server_RCON_Host
 global Server_RCON_Port
 global Server_RCON_Pass
-global Server_SteamQuery_Port
 global Server_Game_DB_Location
 global Server_Game_Log_Location
 global Discord_Killlog_Channel
@@ -31,6 +32,7 @@ global Shop_StartingCash
 global Shop_PayCheck
 global Shop_PayCheck_Interval
 global Shop_CurrencyName
+
 config = configparser.ConfigParser()
 config.read("..\\config.ini")
 DB_host = config["MariaDB"]["Host"]
@@ -38,11 +40,10 @@ DB_port = int(config["MariaDB"]["Port"])
 DB_user = config["MariaDB"]["User"]
 DB_pass = config["MariaDB"]["Pass"]
 DB_name = config["MariaDB"]["DatabaseName"]
-Server_Name = config["Server"]["Name"]
+Server_ID = config["Server"]["ID"]
 Server_RCON_Host = config["Server"]["RCON_Host"]
-Server_RCON_Port = int(config["Server"]["RCON_Port"])
+Server_RCON_Port = config["Server"]["RCON_Port"]
 Server_RCON_Pass = config["Server"]["RCON_Pass"]
-Server_SteamQuery_Port = int(config["Server"]["SteamQuery_Port"])
 Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
 Discord_Killlog_Channel = config["Discord"]["Killlog_Channel"]
@@ -59,7 +60,6 @@ Discord_Jail_Channel = config["Discord"]["Jail_Channel"]
 Discord_Items_for_Sale_Channel = config["Discord"]["Items_for_Sale_Channel"]
 Discord_ServerBuffs_Channel = config["Discord"]["ServerBuffs_Channel"]
 Discord_VaultRental_Channel = config["Discord"]["VaultRental_Channel"]
-Discord_Event_Channel = config["Discord"]["Event_Channel"]
 Discord_API_KEY = config["Discord"]["API_KEY"]
 Shop_StartingCash = config["Shop"]["StartingCash"]
 Shop_PayCheck = config["Shop"]["PayCheck"]

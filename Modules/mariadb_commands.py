@@ -1,7 +1,6 @@
 def connect_mariadb():
-    global mariaCon
-    global mariaCur
     try:
+        global mariaCon
         mariaCon = mariadb.connect(
             user=DB_user,
             password=DB_pass,
@@ -13,7 +12,7 @@ def connect_mariadb():
     except mariadb.Error as e:
         print(f"Error connecting to MariaDB Platform: {e}")
         sys.exit(1)
-    print("Connected to MariaDB Platform")
+    global mariaCur
     mariaCur = mariaCon.cursor()
 
 def close_mariaDB():

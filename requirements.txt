@@ -1,2 +1,0 @@
-#Modules Needed
-python-valve, asyncio, mariadb, discord, sqlite3
