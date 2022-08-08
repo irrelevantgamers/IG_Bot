@@ -114,6 +114,7 @@ if __name__ == '__main__':
             ServerBuffs_Channel            			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the server buffs to',
             VaultRental_Channel           			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the vault rental to',
             lastCheckIn                             DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the server last checked in',
+            lastUserSync                            DATETIME DEFAULT 0              	COMMENT 'Date and time of when the server last synced users',
             PRIMARY KEY (ID)
         );
     """

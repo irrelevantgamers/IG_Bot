@@ -10,6 +10,8 @@ import multiprocessing
 sys.path.insert(0, '..\\Modules')
 from killlog import kill_stream
 from discordhandler import discord_bot
+from usersync import runSync
+
 if __name__ == "__main__":
     # Run setup for the bot
     print("Setting up bot DB info...")
@@ -18,6 +20,7 @@ if __name__ == "__main__":
     #establish bot module status variables
     killlogRunning = False
     discordhandlerRunning = False
+    userSyncRunning = False
     
     #start modules and loop to check for status    
     while True:
@@ -54,5 +57,19 @@ if __name__ == "__main__":
         except Exception as e:
             print(f'Discord Handler Error: {e}')
             discordhandlerRunning = False
+
+        try:
+            if not userSyncRunning:
+                userSync = multiprocessing.Process(target=runSync, args=(False,))
+                userSync.start()
+            if userSync.is_alive():
+                print(f'Status: User Sync is still running')
+                userSyncRunning = True
+            else:
+                print(f'Status: User Sync is not running. Restarting...')
+                userSyncRunning = False
+        except Exception as e:
+            print(f'User Sync Error: {e}')
+            userSyncRunning = False
 
         time.sleep(10) # wait 10 seconds before checking status
