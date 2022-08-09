@@ -120,8 +120,8 @@ if __name__ == '__main__':
             PRIMARY KEY (ID)
         );
     """
-    server_events = """
-        CREATE TABLE server_events IF NOT EXISTS (
+    server_events = f"""
+        CREATE TABLE IF NOT EXISTS {config.Server_Name}_events  (
             ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the server_events Table',
             eventDetailsID          MEDIUMINT NOT NULL                  COMMENT 'Links to the Event Details table',
             discordID 				CHAR(100) NOT NULL					COMMENT 'Discord ID of the admin who started the event',
