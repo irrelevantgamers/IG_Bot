@@ -70,8 +70,8 @@ def kill_stream():
                         FROM game_events WHERE eventType = 103 AND causerName != '' AND ownerName != ''
                     ) 
                 USING (x, y, z) 
-                WHERE datetime(worldTime,'unixepoch') >= datetime('now', '-1 Day') group by x ,y ,z 
-                ORDER BY worldTime DESC 
+                WHERE datetime(worldTime,'unixepoch') >= ? group by x ,y ,z 
+                ORDER BY worldTime ASC 
                 LIMIT 20
                 """,
                 (Killlog_Last_Event_Time,))
@@ -118,13 +118,13 @@ def kill_stream():
                     # Killers PlatformID
                     try:
                         exiled_gamedb_cur.execute(
-                            f"SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
+                            "SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
                             (playerID,))
                         PlayerPlatformID = exiled_gamedb_cur.fetchone()
                         print(PlayerPlatformID)
                         # victims PlatformID
                         exiled_gamedb_cur.execute(
-                            f"SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
+                            "SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
                             (victimID,))
                         VictimPlatformID = exiled_gamedb_cur.fetchone()
                         print(VictimPlatformID)
