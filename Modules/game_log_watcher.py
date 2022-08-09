@@ -91,6 +91,64 @@ def game_log_watcher():
         time = time.strftime("%Y-%m-%d %H:%M:%S")
         return time
 
+    def register(inputcode):
+        try:
+            dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB Platform: {e}")
+            sys.exit(1)
+        dbCur = dbCon.cursor()
+        dbCur.execute("SELECT discordID, registrationcode FROM registration_codes WHERE status = FALSE")
+        results = dbCur.fetchall()
+        for row in results:
+            discordID = row[0]
+            code = row[1]
+
+            if code == inputcode:
+                try:
+                    # open db connection
+                    connection = sqlite3.connect(config.Server_Game_DB_Location)
+                    cursor = connection.cursor()
+
+                    
+                    #find character ID
+                    #cursor.execute(f"SELECT id FROM characters WHERE char_name ='{log_character[0]}'")
+                    cursor.execute(f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =?", (log_character[0], ))
+                    result_id = cursor.fetchone()
+                    print(f"Character-ID: {result_id[0]}")
+                    print(f"Character-Player-ID: {result_id[1]}")
+                    print(f"Character-Name: {result_id[2]}")
+                    print(f"Platform-ID: {result_id[3]}")
+                    
+                    platformid = result_id[3]
+
+                    cursor.close()
+                    connection.close()
+                    print(f"Setting discord ID to {discordID} for {platformid}")
+                    dbCur.execute("UPDATE accounts SET discordid = ? WHERE conanplatformid = ?", (discordID, platformid))
+                    dbCon.commit()
+
+                    #check if registration successful 
+                    dbCur.execute("Select discordid FROM accounts WHERE conanplatformid = ?", (platformid, ))
+                    checkResult = dbCur.fetchone()
+                    if checkResult == None:
+                        print("could not register user. Perhaps not in account list yet")
+                    else:
+                        #update registration status
+                        dbCur.execute("UPDATE registrationcodes SET status = 1 WHERE registrationCode = ?", (inputcode, ))
+                        dbCon.commit()
+                except Exception as e:
+                    print(e)
+                    pass
+                dbCon.close()
+
     if __name__ == "game_log_watcher":
         temp_player = ""
 
@@ -118,6 +176,12 @@ def game_log_watcher():
                 discord_message(msg)
 
                 print(f"Chat: {log_character[0]} ({log_text[0]})")
+            
+                # detect registration requests
+                if "!register " in log_text[0]:
+                    inputcode = log_text[0]
+                    inputcode = inputcode.strip("!register ")  
+                    register(inputcode)  
 
 
             # detect Error

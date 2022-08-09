@@ -1,3 +1,6 @@
+from pickle import FALSE
+
+
 def discord_bot():
     from asyncio.windows_events import NULL
     from subprocess import Popen
@@ -12,6 +15,8 @@ def discord_bot():
     import sys
     import mariadb
     import re
+    import random
+    import string
 
     # Get server id from config file and get server info from mariadb
     sys.path.insert(0, '..\\Modules')
@@ -90,8 +95,8 @@ def discord_bot():
                     if messageSent == 0:
                         discordID = user[0]
                         discordObjID = user[1]
-                        print(f"Discord ID is {discordID}")
-                        print(f"Discord Object ID is {discordObjID}")
+                        #print(f"Discord ID is {discordID}")
+                        #print(f"Discord Object ID is {discordObjID}")
 
                         members = client.get_all_members()
                         for member in members:
@@ -121,7 +126,7 @@ def discord_bot():
                 sys.exit(1)
             dbCur = dbCon.cursor()
             try:
-                dbCur.execute("SELECT * FROM {servername}_pendingdiscordmsg WHERE sent =FALSE".format(servername=config.Server_Name))
+                dbCur.execute("SELECT * FROM {servername}_pendingdiscordmsg WHERE sent =FALSE ORDER BY loadDate ASC".format(servername=config.Server_Name))
                 messages = dbCur.fetchall()
                 if messages != None:
                     for message in messages:
@@ -229,5 +234,47 @@ def discord_bot():
         if message.content.startswith('!intro'):
             await message.channel.send(
                 'Hi I\'m Pythios, a Discord bot currently being developed by SubtleLunatic. I can\'t do a lot yet but i\'m still young.')
+
+        if message.content == '!register':
+            discordID = message.author.name + '#' + message.author.discriminator
+            discordObjID = message.author.id
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+                )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+
+            # Create registration code
+            N = 6
+            code = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
+            #print(code)
+
+            # Get MariaCursor
+            dbCur = dbCon.cursor()
+
+            # insert code with associated discord ID
+            try:
+                dbCur.execute("INSERT INTO registration_codes (discordID, discordObjID, registrationCode, status) VALUES (?, ?, ?, FALSE)",
+                                (discordID, discordObjID, code))
+                dbCon.commit()
+            except Exception as e:
+                if "Duplicate" in str(e):
+                    print("found duplicate updating registration code")
+                    dbCur.execute("UPDATE registration_codes SET registrationcode = ? WHERE discordID = ?",
+                                    (code, discordID))
+                    dbCon.commit()
+                else:
+                    print(f"failed to insert {e}")
+                pass
+            dbCon.close()
+            await message.author.send(f"Please enter '!register {code}' into conan in-game chat without the quotes. Recommend entering in /local or /clan")
+
 
     client.run(config.Discord_API_KEY)
