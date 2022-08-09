@@ -1,3 +1,9 @@
+import sys
+import mariadb
+
+from Modules.config import DB_name, DB_port, DB_host, DB_pass, DB_user
+
+
 def connect_mariadb():
     global mariaCon
     global mariaCur
@@ -15,6 +21,7 @@ def connect_mariadb():
         sys.exit(1)
     print("Connected to MariaDB Platform")
     mariaCur = mariaCon.cursor()
+
 
 def close_mariaDB():
     mariaCur.close()

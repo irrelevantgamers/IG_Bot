@@ -49,6 +49,7 @@ if __name__ == '__main__':
             conanplayer 		CHAR(100)							COMMENT 'In game player name',
             conanUserId 		CHAR(100) NOT NULL					COMMENT 'In game funcom ID', 
             conanPlatformId 	CHAR(100) NOT NULL UNIQUE			COMMENT 'Funcom Platform ID',
+            isAdmin             BOOLEAN DEFAULT 0                   COMMENT 'If the player is an admin or not, default is no',
             walletBalance 		INT NOT NULL DEFAULT 0 		        COMMENT 'Current balance of the players account',
             steamPlatformId 	CHAR(100)							COMMENT 'Steam Platform ID',
             earnRateMultiplier 	INT DEFAULT 1 						COMMENT 'Based on the players subscription level, if they do not have one, DEFAULT to 1', 
@@ -116,6 +117,17 @@ if __name__ == '__main__':
             VaultRental_Channel           			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the vault rental to',
             lastCheckIn                             DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the server last checked in',
             lastUserSync                            DATETIME DEFAULT 0              	COMMENT 'Date and time of when the server last synced users',
+            PRIMARY KEY (ID)
+        );
+    """
+    server_events = """
+        CREATE TABLE server_events IF NOT EXISTS (
+            ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the server_events Table',
+            eventDetailsID          MEDIUMINT NOT NULL                  COMMENT 'Links to the Event Details table',
+            discordID 				CHAR(100) NOT NULL					COMMENT 'Discord ID of the admin who started the event',
+            event_name	 			CHAR(100) NOT NULL					COMMENT 'Name of the event if we can track this or we can DEFAULT to something calculated',
+            start_time	 			DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the event started',
+            end_time	 			DATETIME 	                        COMMENT 'Date and time of when the event ended',
             PRIMARY KEY (ID)
         );
     """
@@ -429,12 +441,12 @@ if __name__ == '__main__':
     """
 
     # Add tables to the table list
-    tableList = [accounts, order_processing, registration_codes, servers, shop_items, shop_log, shop_kits, shop_log,
-                 server_currentusers, server_historicalusers, server_jailinfo, server_offenders, server_protected_areas,
-                 server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals, server_wanted_players,
-                 server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats, server_ArenaPrize_pool,
-                 server_ArenaPrizes, server_Arenas, server_homelocations, server_activeTeleports, server_event_details,
-                 server_insults, server_teleportLog]
+    tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items, shop_log,
+                 shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders,
+                 server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals,
+                 server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
+                 server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,
+                 server_activeTeleports, server_event_details, server_insults, server_teleportLog]
 
     # Attempt to execute the create table queries
     print("Creating tables if they don't exist...")
