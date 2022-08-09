@@ -45,16 +45,17 @@ if __name__ == '__main__':
     # Maria SQL for create tables
     accounts = """
         CREATE TABLE IF NOT EXISTS accounts (
-            id					MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the accounts Table',
-            discordID 			CHAR(100)							COMMENT 'Needed to link the players conanUserId to their discordID to allow them to buy items in discord to be sent to their Conan player',
-            conanplayer 		CHAR(100)							COMMENT 'In game player name',
-            conanUserId 		CHAR(100) NOT NULL					COMMENT 'In game funcom ID', 
-            conanPlatformId 	CHAR(100) NOT NULL UNIQUE			COMMENT 'Funcom Platform ID',
-            isAdmin             BOOLEAN DEFAULT 0                   COMMENT 'If the player is an admin or not, default is no',
-            walletBalance 		INT NOT NULL DEFAULT 0 		        COMMENT 'Current balance of the players account',
-            steamPlatformId 	CHAR(100)							COMMENT 'Steam Platform ID',
-            earnRateMultiplier 	INT DEFAULT 1 						COMMENT 'Based on the players subscription level, if they do not have one, DEFAULT to 1', 
-            lastUpdated 		DATETIME							COMMENT 'Last time this record was updated',
+            id					MEDIUMINT NOT NULL AUTO_INCREMENT	    COMMENT 'Primary KEY for the accounts Table',
+            discordID 			CHAR(100)							    COMMENT 'Needed to link the players conanUserId to their discordID to allow them to buy items in discord to be sent to their Conan player',
+            conanplayer 		CHAR(100)							    COMMENT 'In game player name',
+            conanUserId 		CHAR(100) NOT NULL					    COMMENT 'In game funcom ID', 
+            conanPlatformId 	CHAR(100) NOT NULL UNIQUE			    COMMENT 'Funcom Platform ID',
+            isAdmin             BOOLEAN DEFAULT 0                       COMMENT 'If the player is an admin or not, default is no',
+            walletBalance 		INT NOT NULL DEFAULT 0 		            COMMENT 'Current balance of the players account',
+            lastPaid 			DATETIME DEFAULT '0001-01-01 00:00:00'	COMMENT 'Date and time of when the player last paid',
+            steamPlatformId 	CHAR(100)							    COMMENT 'Steam Platform ID',
+            earnRateMultiplier 	INT DEFAULT 1 						    COMMENT 'Based on the players subscription level, if they do not have one, DEFAULT to 1', 
+            lastUpdated 		DATETIME							    COMMENT 'Last time this record was updated',
             PRIMARY KEY (id)
         );
     """
@@ -138,6 +139,7 @@ if __name__ == '__main__':
             ID						INT       NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the server_pendingDiscordMsg Table',
             destChannelID           TEXT      NOT NULL                  COMMENT 'Discord Channel ID to send the message to',
             message 				TEXT      NOT NULL					COMMENT 'Message to be sent to the channel',
+            messageType             char(100) DEFAULT 'General'         COMMENT 'Type of message to be sent',
             sent    	 			BOOL      NOT NULL					COMMENT 'if the message has been sent or not',
             loadDate	 			DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'When msg was sent to table',
             PRIMARY KEY (ID)

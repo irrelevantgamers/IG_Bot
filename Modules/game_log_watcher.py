@@ -105,11 +105,12 @@ def game_log_watcher():
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         dbCur = dbCon.cursor()
-        dbCur.execute("SELECT discordID, registrationcode FROM registration_codes WHERE status = FALSE")
+        dbCur.execute("SELECT discordID, discordObjID, registrationcode FROM registration_codes WHERE status = FALSE")
         results = dbCur.fetchall()
         for row in results:
             discordID = row[0]
-            code = row[1]
+            discordObjID = row[1]
+            code = row[2]
 
             if code == inputcode:
                 try:
@@ -141,8 +142,9 @@ def game_log_watcher():
                     if checkResult == None:
                         print("could not register user. Perhaps not in account list yet")
                     else:
-                        #update registration status
-                        dbCur.execute("UPDATE registrationcodes SET status = 1 WHERE registrationCode = ?", (inputcode, ))
+                        #delete registration code and send notify message
+                        dbCur.execute("INSERT INTO {server}_pendingDiscordMsg (message, messageType, destChannelID, sent) VALUES (?,?,?,?)".format(server=config.Server_Name), (f"{log_character[0]} registration confirmed!", 'DM', discordID, False))
+                        dbCur.execute("DELETE FROM registration_codes WHERE discordID = ?", (discordID, ))
                         dbCon.commit()
                 except Exception as e:
                     print(e)

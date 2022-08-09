@@ -1,4 +1,5 @@
 from pickle import FALSE
+from re import M
 
 
 def discord_bot():
@@ -130,12 +131,23 @@ def discord_bot():
                 messages = dbCur.fetchall()
                 if messages != None:
                     for message in messages:
-                        destChannel = int(message[1])
+                        destChannel = message[1]
                         messageText = message[2]
-                        channel = client.get_channel(destChannel)
-                        await channel.send("{msg}".format(msg=messageText))
-                        dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=config.Server_Name), (message[0],))
-                        dbCon.commit()
+                        messageType = message[3]
+                        if messageType == 'General':
+                            channel = client.get_channel(int(destChannel))
+                            await channel.send("{msg}".format(msg=messageText))
+                            dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=config.Server_Name), (message[0],))
+                            dbCon.commit()
+                        if messageType == 'DM':
+                            members = client.get_all_members()
+                            DMSent = 0
+                            for member in members:
+                                if (destChannel == str(member)) and (DMSent == 0):
+                                    await member.send("{msg}".format(msg=messageText))
+                                    dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=config.Server_Name), (message[0],))
+                                    dbCon.commit()
+                                    DMSent = 1
                     dbCur.execute("DELETE FROM {servername}_pendingdiscordmsg WHERE sent = TRUE".format(servername=config.Server_Name))
                     dbCon.commit()
             except Exception as e:
@@ -276,5 +288,39 @@ def discord_bot():
             dbCon.close()
             await message.author.send(f"Please enter '!register {code}' into conan in-game chat without the quotes. Recommend entering in /local or /clan")
 
+        if message.content == '!coin':
+            discordID = message.author.name + '#' + message.author.discriminator
+            discordObjID = message.author.id
+            print(discordID)
+            print(discordObjID)
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+                )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+
+
+            # Get MariaCursor
+            dbCur = dbCon.cursor()
+
+            # get wallet balance
+            dbCur.execute("SELECT walletBalance FROM accounts WHERE discordid = ?",(discordID, ))
+            coin = dbCur.fetchone()
+
+            if coin == None:
+                msg = "Couldn't find an account associated with your discord ID. Please !register first."
+                print("Couldn't find discord ID in accounts... not registered?")
+            else:
+                coin = coin[0] 
+                msg = (f"You have {coin} {config.Shop_CurrencyName}")
+            dbCon.close()
+            await message.channel.send(msg)
 
     client.run(config.Discord_API_KEY)
