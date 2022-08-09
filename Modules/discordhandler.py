@@ -52,19 +52,25 @@ def discord_bot():
     async def player_count_refresh():
 
         while True:
-            # connect to exiled for info
-            mariaCur.execute("SELECT conid FROM {servername}_currentusers".format(servername=config.Server_Name))
-            prizes = mariaCur.fetchall()
-            player_count = len(prizes)
-            print("Updating player count for discord status")
-            await client.change_presence(
-                activity=discord.Activity(type=discord.ActivityType.watching, name="{} online".format(player_count)))
-
+            connect_mariadb()
+            try:
+                # connect to exiled for info
+                mariaCur.execute("SELECT conid FROM {servername}_currentusers".format(servername=config.Server_Name))
+                prizes = mariaCur.fetchall()
+                player_count = len(prizes)
+                print("Updating player count for discord status")
+                await client.change_presence(
+                    activity=discord.Activity(type=discord.ActivityType.watching, name="{} online".format(player_count)))
+            except Exception as e:
+                print(f"Error updating player count for discord status: {e}")
+                pass
+            
+            close_mariaDB()
             await asyncio.sleep(60)  # task runs every 60 seconds
 
     async def registrationWatcher():
         while True:
-            mariaCur = mariaCon.cursor()
+            connect_mariadb()
             # find complete registrations
             mariaCur.execute("SELECT * FROM registration_codes WHERE status = 1")
             completed = mariaCur.fetchall()
@@ -85,12 +91,14 @@ def discord_bot():
                                 mariaCur.execute("DELETE FROM registrationcodes WHERE discordID = ?", (discordID,))
                                 mariaCon.commit()
                                 messageSent = 1
+            close_mariaDB()
             await asyncio.sleep(5)  # task runs every 5 seconds
 
     async def kill_log_watcher():
         while True:
+            connect_mariadb()
             try:
-                mariaCur = mariaCon.cursor()
+                
                 # find complete registrations
                 mariaCur.execute(
                     "SELECT * FROM {servername}_kill_log WHERE discord_notified = 0 ORDER BY Killlog_Last_event_Time ASC LIMIT 1".format(
@@ -142,13 +150,13 @@ def discord_bot():
             except Exception as e:
                 print(f"Kill_Log_Watcher_error: {e}")
                 sys.exit(1)
+            close_mariaDB()
             await asyncio.sleep(1)  # task runs every 1 seconds
 
     @client.event
     async def on_ready():
         print('We have logged in as {0.user}'.format(client))
         await client.change_presence(activity=discord.Game(name="Conan Exiles"))
-        connect_mariadb()
         client.loop.create_task(player_count_refresh())
         client.loop.create_task(registrationWatcher())
         client.loop.create_task(kill_log_watcher())

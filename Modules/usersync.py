@@ -11,11 +11,32 @@ import sys
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 import config
-def connect_mariadb():
-    global mariaCon
-    global mariaCur
+#def connect_mariadb():
+#    #global mariaCon
+#    #global mariaCur
+#    try:
+#        mariaCon = mariadb.connect(
+#            user=config.DB_user,
+#            password=config.DB_pass,
+#            host=config.DB_host,
+#            port=config.DB_port,
+#            database=config.DB_name
+#
+#        )
+#    except mariadb.Error as e:
+#        print(f"Error connecting to MariaDB Platform: {e}")
+#        sys.exit(1)
+#
+#    mariaCur = mariaCon.cursor()
+#
+#
+#def close_mariaDB():
+#    mariaCur.close()
+#    mariaCon.close()
+
+def syncPlayers(serverid):
     try:
-        mariaCon = mariadb.connect(
+        syncCon = mariadb.connect(
             user=config.DB_user,
             password=config.DB_pass,
             host=config.DB_host,
@@ -27,19 +48,11 @@ def connect_mariadb():
         print(f"Error connecting to MariaDB Platform: {e}")
         sys.exit(1)
 
-    mariaCur = mariaCon.cursor()
-
-
-def close_mariaDB():
-    mariaCur.close()
-    mariaCon.close()
-
-def syncPlayers(serverid):
+    syncCur = syncCon.cursor()
     print(f"Syncing current users for server id {serverid}")
     #get server config from db
-    connect_mariadb()
-    mariaCur.execute("SELECT ServerName, dedicated, rcon_host, rcon_port, rcon_pass, SteamQueryPort, DatabaseLocation FROM servers where Enabled =True and ID =?",(serverid, ))
-    serverInfo = mariaCur.fetchone()
+    syncCur.execute("SELECT ServerName, dedicated, rcon_host, rcon_port, rcon_pass, SteamQueryPort, DatabaseLocation FROM servers where Enabled =True and ID =?",(serverid, ))
+    serverInfo = syncCur.fetchone()
     if serverInfo != None:
         serverName = serverInfo[0]
         dedicated = serverInfo[1]
@@ -54,7 +67,7 @@ def syncPlayers(serverid):
     loadDate = (datetime.now())
     success = 0
     #recreate currentUsers table
-    dropCurrentUsers_query = f"""DROP TABLE {serverName}_currentusers;"""
+    dropCurrentUsers_query = f"""TRUNCATE TABLE {serverName}_currentusers;"""
     createCurrentUsers_query = f"""
         CREATE TABLE IF NOT EXISTS {serverName}_currentusers (
             conid           CHAR(100) NOT NULL UNIQUE COMMENT 'Connection ID of the player',
@@ -70,9 +83,10 @@ def syncPlayers(serverid):
     
    
     try:
-        mariaCur.execute(dropCurrentUsers_query)
-        mariaCur.execute(createCurrentUsers_query)
-        mariaCon.commit()
+        syncCur.execute(dropCurrentUsers_query)
+        syncCon.commit()
+        #mariaCur.execute(createCurrentUsers_query)
+        #mariaCon.commit()
     except Exception as e:
         print(f"Error creating currentUsers table from usersync script: {e}")
         sys.exit(1)
@@ -132,29 +146,48 @@ def syncPlayers(serverid):
                     else:
                         playerX = 0
                         playerY = 0
-                    mariaCur.execute(f"INSERT INTO {serverName}_currentUsers (conid, player, userid, platformid, steamPlatformId, X, Y, loadDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (conid, player, userid, platformid, steamPlatformId, int(playerX), int(playerY), loadDate))
-                    mariaCur.execute(f"INSERT INTO {serverName}_historicalUsers (conid, player, userid, platformid, steamPlatformId, X, Y, loadDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (conid, player, userid, platformid, steamPlatformId, int(playerX), int(playerY), loadDate))
+                    syncCur.execute(f"INSERT INTO {serverName}_currentUsers (conid, player, userid, platformid, steamPlatformId, X, Y, loadDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (conid, player, userid, platformid, steamPlatformId, int(playerX), int(playerY), loadDate))
+                    syncCur.execute(f"INSERT INTO {serverName}_historicalUsers (conid, player, userid, platformid, steamPlatformId, X, Y, loadDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (conid, player, userid, platformid, steamPlatformId, int(playerX), int(playerY), loadDate))
                     
-                    mariaCon.commit()
+                    syncCon.commit()
         except Exception as e:
             if "index out of range" in str(e):
                 pass
             else:
                 print(f"UserSyncError: {e}")
                 pass
+    syncCon.commit()
+    syncCur.close()
+    syncCon.close()
 
 def runSync(force):
-    connect_mariadb()
-    mariaCur.execute("Select ID, lastUserSync FROM servers WHERE Enabled =TRUE")
-    servers = mariaCur.fetchall()
+    try:
+        runSyncCon = mariadb.connect(
+            user=config.DB_user,
+            password=config.DB_pass,
+            host=config.DB_host,
+            port=config.DB_port,
+            database=config.DB_name
+
+        )
+    except mariadb.Error as e:
+        print(f"Error connecting to MariaDB Platform: {e}")
+        sys.exit(1)
+
+    runSyncCur = runSyncCon.cursor()
+    runSyncCur.execute("Select ID, lastUserSync FROM servers WHERE Enabled =TRUE")
+    servers = runSyncCur.fetchall()
     if servers != None:
             for server in servers:
                 serverid = server[0]
                 lastUserSync = server[1]
                 now = datetime.now()
+                fiveMinAgo = now - timedelta(minutes=5)
                 if force == True:
                     try:
                         syncPlayers(serverid)
+                        runSyncCur.execute("UPDATE servers SET lastUserSync = ? WHERE ID = ?", (now, serverid))
+                        runSyncCon.commit()
                     except Exception as e:
                         print(f"Could not sync players for ServerID {serverid}.\nError: {e}")
                         pass
@@ -162,19 +195,20 @@ def runSync(force):
                     if lastUserSync == None:
                         try:
                             syncPlayers(serverid)
-                            mariaCur.execute("UPDATE servers SET lastUserSync = ? WHERE ID = ?", (now, serverid))
-                            mariaCon.commit()
+                            runSyncCur.execute("UPDATE servers SET lastUserSync = ? WHERE ID = ?", (now, serverid))
+                            runSyncCon.commit()
                         except Exception as e:
                             print(f"Could not sync players for ServerID {serverid}.\nError: {e}")
                             pass
                     else:
-                        if (now - lastUserSync).seconds > 300:
+                        if lastUserSync < fiveMinAgo:
                             try:
                                 syncPlayers(serverid)
+                                runSyncCur.execute("UPDATE servers SET lastUserSync = ? WHERE ID = ?", (now, serverid))
+                                runSyncCon.commit()
                             except Exception as e:
                                 print(f"Could not sync players for ServerID {serverid}.\nError: {e}")
                                 pass
-                        else:
-                            pass
                     
-    close_mariaDB()
+    runSyncCur.close()
+    runSyncCon.close()
