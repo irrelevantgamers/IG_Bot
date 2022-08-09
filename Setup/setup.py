@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 import config
+
 def connect_mariadb():
     global mariaCon
     global mariaCur
@@ -128,6 +129,17 @@ if __name__ == '__main__':
             event_name	 			CHAR(100) NOT NULL					COMMENT 'Name of the event if we can track this or we can DEFAULT to something calculated',
             start_time	 			DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the event started',
             end_time	 			DATETIME 	                        COMMENT 'Date and time of when the event ended',
+            PRIMARY KEY (ID)
+        );
+    """
+
+    server_pendingDiscordMsg = f"""
+        CREATE TABLE IF NOT EXISTS {config.Server_Name}_pendingDiscordMsg  (
+            ID						INT       NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the server_pendingDiscordMsg Table',
+            destChannelID           TEXT      NOT NULL                  COMMENT 'Discord Channel ID to send the message to',
+            message 				TEXT      NOT NULL					COMMENT 'Message to be sent to the channel',
+            sent    	 			BOOL      NOT NULL					COMMENT 'if the message has been sent or not',
+            loadDate	 			DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'When msg was sent to table',
             PRIMARY KEY (ID)
         );
     """
@@ -441,8 +453,8 @@ if __name__ == '__main__':
     """
 
     # Add tables to the table list
-    tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items, shop_log,
-                 shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders,
+    tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,server_pendingDiscordMsg,
+                 shop_log, shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders,
                  server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals,
                  server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
                  server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,

@@ -6,11 +6,13 @@ import sys
 import subprocess
 import multiprocessing
 
+
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
 from killlog import kill_stream
 from discordhandler import discord_bot
 from usersync import runSync
+from game_log_watcher import game_log_watcher
 
 if __name__ == "__main__":
     # Run setup for the bot
@@ -21,7 +23,7 @@ if __name__ == "__main__":
     killlogRunning = False
     discordhandlerRunning = False
     userSyncRunning = False
-    
+    gameLogWatcherRunning = False
     #start modules and loop to check for status    
     while True:
         try:
@@ -71,5 +73,19 @@ if __name__ == "__main__":
         except Exception as e:
             print(f'User Sync Error: {e}')
             userSyncRunning = False
+
+        try:
+            if not gameLogWatcherRunning:
+                gameLogWatcher = multiprocessing.Process(target=game_log_watcher)
+                gameLogWatcher.start()
+            if gameLogWatcher.is_alive():
+                print(f'Status: Game Log Watcher is still running')
+                gameLogWatcherRunning = True
+            else:
+                print(f'Status: Game Log Watcher is not running. Restarting...')
+                gameLogWatcherRunning = False
+        except Exception as e:
+            print(f'Game Log Watcher error: {e}')
+            gameLogWatcherRunning = False
 
         time.sleep(10) # wait 10 seconds before checking status

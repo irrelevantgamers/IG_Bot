@@ -22,27 +22,6 @@ def discord_bot():
     intents.members = True
     client = discord.Client(intents=intents)
 
-    def connect_mariadb():
-        global mariaCon
-        global mariaCur
-        try:
-            mariaCon = mariadb.connect(
-                user=config.DB_user,
-                password=config.DB_pass,
-                host=config.DB_host,
-                port=config.DB_port,
-                database=config.DB_name
-
-            )
-        except mariadb.Error as e:
-            print(f"Error connecting to MariaDB Platform: {e}")
-            sys.exit(1)
-        mariaCur = mariaCon.cursor()
-
-    def close_mariaDB():
-        mariaCur.close()
-        mariaCon.close()
-
     def clean_text(rgx_list, text):
         new_text = text
         for rgx_match in rgx_list:
@@ -52,28 +31,59 @@ def discord_bot():
     async def player_count_refresh():
 
         while True:
-            connect_mariadb()
             try:
-                # connect to exiled for info
-                mariaCur.execute("SELECT conid FROM {servername}_currentusers".format(servername=config.Server_Name))
-                prizes = mariaCur.fetchall()
-                player_count = len(prizes)
-                print("Updating player count for discord status")
-                await client.change_presence(
-                    activity=discord.Activity(type=discord.ActivityType.watching, name="{} online".format(player_count)))
-            except Exception as e:
-                print(f"Error updating player count for discord status: {e}")
-                pass
-            
-            close_mariaDB()
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+
+            dbCur = dbCon.cursor()
+            dbCur.execute("Select servername FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            player_count = 0
+            if servers != None:
+                for server in servers:
+                    servername = server[0]
+                    try:
+                        # connect to exiled for info
+                        dbCur.execute("SELECT conid FROM {server}_currentusers".format(server=servername))
+                        players = dbCur.fetchall()
+                        player_count = player_count + len(players)
+                        
+                    except Exception as e:
+                        print(f"Error updating player count for discord status: {e}")
+                        pass
+            print("Updating player count for discord status")
+            await client.change_presence(
+                activity=discord.Activity(type=discord.ActivityType.watching, name="{} online".format(player_count)))
+            dbCon.close()
             await asyncio.sleep(60)  # task runs every 60 seconds
 
     async def registrationWatcher():
         while True:
-            connect_mariadb()
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            dbCur = dbCon.cursor()
             # find complete registrations
-            mariaCur.execute("SELECT * FROM registration_codes WHERE status = 1")
-            completed = mariaCur.fetchall()
+            dbCur.execute("SELECT * FROM registration_codes WHERE status = 1")
+            completed = dbCur.fetchall()
             messageSent = 0
             if completed != None:
                 for user in completed:
@@ -88,22 +98,70 @@ def discord_bot():
                             if (discordID == str(member)) and (messageSent == 0):
                                 print(f"inside {member}")
                                 await member.send("Registration Complete")
-                                mariaCur.execute("DELETE FROM registrationcodes WHERE discordID = ?", (discordID,))
-                                mariaCon.commit()
+                                dbCur.execute("DELETE FROM registrationcodes WHERE discordID = ?", (discordID,))
+                                dbCon.commit()
                                 messageSent = 1
-            close_mariaDB()
+            dbCur.close()
+            dbCon.close()
             await asyncio.sleep(5)  # task runs every 5 seconds
 
+    async def pending_Message_Watcher():
+        while True:
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            dbCur = dbCon.cursor()
+            try:
+                dbCur.execute("SELECT * FROM {servername}_pendingdiscordmsg WHERE sent =FALSE".format(servername=config.Server_Name))
+                messages = dbCur.fetchall()
+                if messages != None:
+                    for message in messages:
+                        destChannel = int(message[1])
+                        messageText = message[2]
+                        channel = client.get_channel(destChannel)
+                        await channel.send("{msg}".format(msg=messageText))
+                        dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=config.Server_Name), (message[0],))
+                        dbCon.commit()
+                    dbCur.execute("DELETE FROM {servername}_pendingdiscordmsg WHERE sent = TRUE".format(servername=config.Server_Name))
+                    dbCon.commit()
+            except Exception as e:
+                print(f"Error sending pending discord messages: {e}")
+                pass
+            dbCur.close()
+            dbCon.close()
+            await asyncio.sleep(1)  # task runs every 5 seconds
+   
     async def kill_log_watcher():
         while True:
-            connect_mariadb()
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            dbCur = dbCon.cursor()
             try:
                 
                 # find complete registrations
-                mariaCur.execute(
+                dbCur.execute(
                     "SELECT * FROM {servername}_kill_log WHERE discord_notified = 0 ORDER BY Killlog_Last_event_Time ASC LIMIT 1".format(
                         servername=config.Server_Name))
-                kills = mariaCur.fetchall()
+                kills = dbCur.fetchall()
                 if kills is not None and len(kills) != 0:
                     for kill in kills:
                         list = ''
@@ -124,7 +182,7 @@ def discord_bot():
                         bounty_amount = kill[15]
 
                         if kill_type == "ProtectedArea":
-                            channel = client.get_channel(config.Discord_Killlog_Channel)
+                            channel = client.get_channel(int(config.Discord_Killlog_Channel))
                             list = list + (
                                 f"**PROTECTED AREA KILL DETECTED AT {protected_area} STRIKE HAS BEEN ISSUED**\n")
                         if kill_type == "Normal":
@@ -133,9 +191,9 @@ def discord_bot():
                                 '⚔️**{}** of clan **{}** killed **{}** of clan **{}**⚔️\n'.format(player, player_clan,
                                                                                                   victim, victim_clan))
                         if kill_type == "Event":
-                            channel = client.get_channel(config.Discord_Event_Channel)
+                            channel = client.get_channel(int(config.Discord_Killlog_Channel))
                         if kill_type == "Arena":
-                            channel = client.get_channel(config.Discord_Event_Channel)
+                            channel = client.get_channel(int(config.Discord_Killlog_Channel))
 
                         if wanted_kill == True:
                             list = list + (
@@ -143,14 +201,15 @@ def discord_bot():
                                                                                             config.Shop_CurrencyName))
 
                         await channel.send(list)
-                        mariaCur.execute("UPDATE {servername}_kill_log SET discord_notified = 1 WHERE id = ?".format(
+                        dbCur.execute("UPDATE {servername}_kill_log SET discord_notified = 1 WHERE id = ?".format(
                             servername=config.Server_Name), (id,))
-                        mariaCon.commit()
+                        dbCon.commit()
 
             except Exception as e:
                 print(f"Kill_Log_Watcher_error: {e}")
                 sys.exit(1)
-            close_mariaDB()
+            dbCur.close()
+            dbCon.close()
             await asyncio.sleep(1)  # task runs every 1 seconds
 
     @client.event
@@ -160,6 +219,7 @@ def discord_bot():
         client.loop.create_task(player_count_refresh())
         client.loop.create_task(registrationWatcher())
         client.loop.create_task(kill_log_watcher())
+        client.loop.create_task(pending_Message_Watcher())
 
     @client.event
     async def on_message(message):

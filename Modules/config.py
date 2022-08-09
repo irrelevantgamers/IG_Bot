@@ -32,6 +32,7 @@ global Shop_StartingCash
 global Shop_PayCheck
 global Shop_PayCheck_Interval
 global Shop_CurrencyName
+global Time_Timezone
 config = configparser.ConfigParser()
 config.read("..\\config.ini")
 DB_host = config["MariaDB"]["Host"]
@@ -47,7 +48,7 @@ Server_SteamQuery_Port = int(config["Server"]["SteamQuery_Port"])
 Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
 Discord_ServerLog_Channel = config["Discord"]["ServerLog_Channel"]
-Discord_Killlog_Channel = config["Discord"]["Killlog_Channel"]
+Discord_Killlog_Channel = int(config["Discord"]["Killlog_Channel"])
 Discord_Solo_LeaderBoardAll_Channel = config["Discord"]["Solo_LeaderBoardAll_Channel"]
 Discord_Solo_LeaderBoard30Days_Channel = config["Discord"]["Solo_LeaderBoard30Days_Channel"]
 Discord_Solo_LeaderBoard7Days_Channel = config["Discord"]["Solo_LeaderBoard7Days_Channel"]
@@ -67,3 +68,4 @@ Shop_StartingCash = config["Shop"]["StartingCash"]
 Shop_PayCheck = config["Shop"]["PayCheck"]
 Shop_PayCheck_Interval = config["Shop"]["PayCheckInterval"]
 Shop_CurrencyName = config["Shop"]["CurrencyName"]
+Time_Timezone = int(config["Time"]["Timezone"])
