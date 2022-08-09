@@ -150,6 +150,21 @@ def syncPlayers(serverid):
                     syncCur.execute(f"INSERT INTO {serverName}_historicalUsers (conid, player, userid, platformid, steamPlatformId, X, Y, loadDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (conid, player, userid, platformid, steamPlatformId, int(playerX), int(playerY), loadDate))
                     
                     syncCon.commit()
+
+            #create accounts for any new users
+            syncCur.execute(f"SELECT player, userid, platformid, steamplatformid FROM {serverName}_currentUsers")
+            result = syncCur.fetchall()
+            for row in result:
+                player = row[0]
+                userid = row[1]
+                platformid = row[2]
+                steamid = row[3]
+                syncCur.execute(f"SELECT * FROM accounts WHERE conanuserid =? AND conanplatformid =?", (userid, platformid))
+                result = syncCur.fetchone()
+                if result == None:
+                    syncCur.execute(f"INSERT INTO accounts (conanplayer, conanuserid, conanplatformid, steamplatformid, walletbalance, lastupdated) VALUES (?, ?, ?, ?, ?, ?)", (player, userid, platformid, steamPlatformId, 0, loadDate))
+                    syncCon.commit()
+        
         except Exception as e:
             if "index out of range" in str(e):
                 pass
