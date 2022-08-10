@@ -351,7 +351,7 @@ def discord_bot():
                             
                             #log purchase
                             status = "Order Placed"
-                            shopCur.execute("INSERT INTO shop_log (item, count, price, player, status, timestamp) VALUES (?,?,?,?,?,?)", (itemname, itemcount, itemprice, senderID, status, loadDate))
+                            shopCur.execute("INSERT INTO shop_log (item, count, price, player, status, logtimestamp) VALUES (?,?,?,?,?,?)", (itemname, itemcount, itemprice, senderID, status, loadDate))
                             shopCon.commit()
                             #remove currency
                             newBalance = int(senderCurrency) - int(itemprice)
