@@ -117,6 +117,7 @@ if __name__ == '__main__':
             Items_for_Sale_Channel              	CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the items for sale to',
             ServerBuffs_Channel            			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the server buffs to',
             VaultRental_Channel           			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the vault rental to',
+            Event_Channel           				CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the events to',
             lastCheckIn                             DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the server last checked in',
             lastUserSync                            DATETIME DEFAULT 0              	COMMENT 'Date and time of when the server last synced users',
             PRIMARY KEY (ID)
@@ -502,8 +503,9 @@ if __name__ == '__main__':
                     Jail_Channel,             		
                     Items_for_Sale_Channel,            
                     ServerBuffs_Channel,            	
-                    VaultRental_Channel
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                    VaultRental_Channel,
+                    Event_Channel
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 
 
@@ -531,7 +533,8 @@ if __name__ == '__main__':
                 config.Discord_Jail_Channel,
                 config.Discord_Items_for_Sale_Channel,
                 config.Discord_ServerBuffs_Channel,
-                config.Discord_VaultRental_Channel))
+                config.Discord_VaultRental_Channel,
+                config.Discord_Event_Channel))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):

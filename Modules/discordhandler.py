@@ -126,33 +126,38 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
-            try:
-                dbCur.execute("SELECT * FROM {servername}_pendingdiscordmsg WHERE sent =FALSE ORDER BY loadDate ASC".format(servername=config.Server_Name))
-                messages = dbCur.fetchall()
-                if messages != None:
-                    for message in messages:
-                        destChannel = message[1]
-                        messageText = message[2]
-                        messageType = message[3]
-                        if messageType == 'General':
-                            channel = client.get_channel(int(destChannel))
-                            await channel.send("{msg}".format(msg=messageText))
-                            dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=config.Server_Name), (message[0],))
-                            dbCon.commit()
-                        if messageType == 'DM':
-                            members = client.get_all_members()
-                            DMSent = 0
-                            for member in members:
-                                if (destChannel == str(member)) and (DMSent == 0):
-                                    await member.send("{msg}".format(msg=messageText))
-                                    dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=config.Server_Name), (message[0],))
+            dbCur.execute("Select servername FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    serverName = server[0]
+                    try:
+                        dbCur.execute("SELECT * FROM {servername}_pendingdiscordmsg WHERE sent =FALSE ORDER BY loadDate ASC".format(servername=serverName))
+                        messages = dbCur.fetchall()
+                        if messages != None:
+                            for message in messages:
+                                destChannel = message[1]
+                                messageText = message[2]
+                                messageType = message[3]
+                                if messageType == 'General':
+                                    channel = client.get_channel(int(destChannel))
+                                    await channel.send("{msg}".format(msg=messageText))
+                                    dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=serverName), (message[0],))
                                     dbCon.commit()
-                                    DMSent = 1
-                    dbCur.execute("DELETE FROM {servername}_pendingdiscordmsg WHERE sent = TRUE".format(servername=config.Server_Name))
-                    dbCon.commit()
-            except Exception as e:
-                print(f"Error sending pending discord messages: {e}")
-                pass
+                                if messageType == 'DM':
+                                    members = client.get_all_members()
+                                    DMSent = 0
+                                    for member in members:
+                                        if (destChannel == str(member)) and (DMSent == 0):
+                                            await member.send("{msg}".format(msg=messageText))
+                                            dbCur.execute("UPDATE {servername}_pendingdiscordmsg SET sent = TRUE WHERE ID = ?".format(servername=serverName), (message[0],))
+                                            dbCon.commit()
+                                            DMSent = 1
+                            dbCur.execute("DELETE FROM {servername}_pendingdiscordmsg WHERE sent = TRUE".format(servername=serverName))
+                            dbCon.commit()
+                    except Exception as e:
+                        print(f"Error sending pending discord messages: {e}")
+                        pass
             dbCur.close()
             dbCon.close()
             await asyncio.sleep(1)  # task runs every 5 seconds
@@ -172,59 +177,67 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
-            try:
-                
-                # find complete registrations
-                dbCur.execute(
-                    "SELECT * FROM {servername}_kill_log WHERE discord_notified = 0 ORDER BY Killlog_Last_event_Time ASC LIMIT 1".format(
-                        servername=config.Server_Name))
-                kills = dbCur.fetchall()
-                if kills is not None and len(kills) != 0:
-                    for kill in kills:
-                        list = ''
-                        id = kill[0]
-                        player = kill[1]
-                        player_id = kill[2]
-                        player_level = kill[3]
-                        player_clan = kill[4]
-                        victim = kill[5]
-                        victim_id = kill[6]
-                        victim_level = kill[7]
-                        victim_clan = kill[8]
-                        kill_type = kill[11]
-                        protected_area = kill[12]
-                        wanted_kill = kill[13]
-                        wanted_paid_amount = kill[14]
-                        bounty_kill = kill[14]
-                        bounty_amount = kill[15]
+            dbCur = dbCon.cursor()
+            dbCur.execute("Select servername, Killlog_Channel, Event_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    serverName = server[0]
+                    killlog_channel = int(server[1])
+                    event_channel = int(server[2])
+                    try:
+                        
+                        # find complete registrations
+                        dbCur.execute(
+                            "SELECT * FROM {servername}_kill_log WHERE discord_notified = 0 ORDER BY Killlog_Last_event_Time ASC LIMIT 1".format(
+                                servername=serverName))
+                        kills = dbCur.fetchall()
+                        if kills is not None and len(kills) != 0:
+                            for kill in kills:
+                                list = ''
+                                id = kill[0]
+                                player = kill[1]
+                                player_id = kill[2]
+                                player_level = kill[3]
+                                player_clan = kill[4]
+                                victim = kill[5]
+                                victim_id = kill[6]
+                                victim_level = kill[7]
+                                victim_clan = kill[8]
+                                kill_type = kill[11]
+                                protected_area = kill[12]
+                                wanted_kill = kill[13]
+                                wanted_paid_amount = kill[14]
+                                bounty_kill = kill[14]
+                                bounty_amount = kill[15]
 
-                        if kill_type == "ProtectedArea":
-                            channel = client.get_channel(int(config.Discord_Killlog_Channel))
-                            list = list + (
-                                f"**PROTECTED AREA KILL DETECTED AT {protected_area} STRIKE HAS BEEN ISSUED**\n")
-                        if kill_type == "Normal":
-                            channel = client.get_channel(int(config.Discord_Killlog_Channel))
-                            list = list + (
-                                '⚔️**{}** of clan **{}** killed **{}** of clan **{}**⚔️\n'.format(player, player_clan,
-                                                                                                  victim, victim_clan))
-                        if kill_type == "Event":
-                            channel = client.get_channel(int(config.Discord_Killlog_Channel))
-                        if kill_type == "Arena":
-                            channel = client.get_channel(int(config.Discord_Killlog_Channel))
+                                if kill_type == "ProtectedArea":
+                                    channel = client.get_channel(killlog_channel)
+                                    list = list + (
+                                        f"**PROTECTED AREA KILL DETECTED AT {protected_area} STRIKE HAS BEEN ISSUED**\n")
+                                if kill_type == "Normal":
+                                    channel = client.get_channel(killlog_channel)
+                                    list = list + (
+                                        '⚔️**{}** of clan **{}** killed **{}** of clan **{}**⚔️\n'.format(player, player_clan,
+                                                                                                        victim, victim_clan))
+                                if kill_type == "Event":
+                                    channel = client.get_channel(event_channel)
+                                if kill_type == "Arena":
+                                    channel = client.get_channel(event_channel)
 
-                        if wanted_kill == True:
-                            list = list + (
-                                '🔥**{}** earned {} {} for killing while wanted🔥\n'.format(player, wanted_paid_amount,
-                                                                                            config.Shop_CurrencyName))
+                                if wanted_kill == True:
+                                    list = list + (
+                                        '🔥**{}** earned {} {} for killing while wanted🔥\n'.format(player, wanted_paid_amount,
+                                                                                                    config.Shop_CurrencyName))
 
-                        await channel.send(list)
-                        dbCur.execute("UPDATE {servername}_kill_log SET discord_notified = 1 WHERE id = ?".format(
-                            servername=config.Server_Name), (id,))
-                        dbCon.commit()
+                                await channel.send(list)
+                                dbCur.execute("UPDATE {servername}_kill_log SET discord_notified = 1 WHERE id = ?".format(
+                                    servername=serverName), (id,))
+                                dbCon.commit()
 
-            except Exception as e:
-                print(f"Kill_Log_Watcher_error: {e}")
-                sys.exit(1)
+                    except Exception as e:
+                        print(f"Kill_Log_Watcher_error: {e}")
+                        sys.exit(1)
             dbCur.close()
             dbCon.close()
             await asyncio.sleep(1)  # task runs every 1 seconds
