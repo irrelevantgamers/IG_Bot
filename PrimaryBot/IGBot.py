@@ -47,7 +47,7 @@ if __name__ == "__main__":
                     killlogRunning = False
                 else:
                     print(f'Status: Killlog is still running')
-                    killlogRunning = False
+                    killlogRunning = True
             except Exception as e:
                 print(f'Kill Log Error: {e}')
                 killlogRunning = False

@@ -309,7 +309,7 @@ def discord_bot():
                         shopCur.execute("SELECT logtimestamp FROM shop_log WHERE item =? AND player=? ORDER BY ID Desc", (itemname, senderID))
                         lastPurchase = shopCur.fetchone()
                         if lastPurchase != None:
-                            timestamp = datetime.strptime(lastPurchase[0], "%m-%d-%YT%H:%M:%S")
+                            timestamp = lastPurchase[0]
                             now = datetime.now()
                             coolDownExpires = timestamp + timedelta(minutes=cooldown)
                             if now > coolDownExpires:
@@ -361,19 +361,186 @@ def discord_bot():
 
                     else:
                         msg = "Insufficient Balance"
+                message = await sourcechannel.send(msg)
+                message_id = message.id
+                discordChannelID = sourcechannel.id
+                #insert message ID for order_num
+                if msg != "Item not found":
+                    shopCur.execute("UPDATE order_processing SET discordMessageID =?, discordChannelID =? WHERE order_number =?", (message_id, discordChannelID, order_number))
+                    shopCon.commit()
+                shopCur.close()
+                shopCon.close()
+                
             
         except Exception as e:
                 print(f"Error on DB: {e}")
                 msg = ("Couldn't connect to DB. Try again later")
                 pass
-        message = await sourcechannel.send(msg)
-        message_id = message.id
-        discordChannelID = sourcechannel.id
-        #insert message ID for order_num
-        if msg != "Item not found":
-            shopCur.execute("UPDATE order_processing SET discordMessageID =?, discordChannelID =? WHERE order_number =?", (message_id, discordChannelID, order_number))
+        
+
+    async def refundOrder(userIN,channelID):
+        sourceChannel = client.get_channel(channelID)
+        order_number = userIN
+        print(f"Attempting to refund order {order_number}")
+        #find if order is eligible (is the order not in process and not complete, has the order been refunded already, is the requester the original orderer)
+        try:
+                shopCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB Platform: {e}")
+            sys.exit(1)
+
+        shopCur = shopCon.cursor()
+        shopCur.execute("SELECT id, order_number, order_value, itemid, in_process, completed, refunded, order_date, last_attempt, completed_date, discordMessageID, discordChannelID, purchaser_platformid FROM order_processing WHERE order_number =?",(userIN, ))
+        orderDetails = shopCur.fetchall()
+        if orderDetails != None:
+            refundedFound = 0
+            inProcessFound = 0
+            completedFound = 0
+            order_value = 0
+            order_number = 0
+            for item in orderDetails:
+                order_value = item[2]    
+                inProcess = item[4]
+                completed = item[5]
+                refunded = item[6]
+                order_number = item[1]
+                purchaser_platformid = item[12]
+                if inProcess == True:
+                    inProcessFound = 1
+                if completed == True:
+                    completedFound = 1
+                if refunded == True:
+                    refundedFound = 1
+
+            if refundedFound == 1 or inProcessFound == 1 or completedFound == 1:
+                msg = "Order is not eligible for refund."
+            else:
+                #get wallet balance of user and add order value back to wallet
+                shopCur.execute("SELECT walletBalance from accounts WHERE conanPlatformId =?",(purchaser_platformid, ))
+                balance = shopCur.fetchone()
+                if balance != None:
+                    balance = balance[0]
+                    newBalance = int(balance) + int(order_value)
+                    shopCur.execute("UPDATE accounts SET walletBalance =? WHERE conanPlatformId =?",(newBalance, purchaser_platformid))
+                    shopCon.commit()
+                    #set order status to refunded
+                    shopCur.execute("UPDATE order_processing SET refunded =True WHERE order_number =?", (order_number,))
+                    shopCon.commit()
+                    msg = f"Refund has been processed. New wallet balance is {newBalance}"
+                else:
+                    msg = f"Account not found for {purchaser_platformid}. Please !register first"
+        else:
+            msg = "Order not found"
         shopCur.close()
         shopCon.close()
+        await sourceChannel.send(msg)
+
+    async def orderStatusWatcher():
+        while True:
+            try:
+                try:
+                    shopCon = mariadb.connect(
+                    user=config.DB_user,
+                    password=config.DB_pass,
+                    host=config.DB_host,
+                    port=config.DB_port,
+                    database=config.DB_name
+
+                        )
+                except mariadb.Error as e:
+                    print(f"Error connecting to MariaDB Platform: {e}")
+                    sys.exit(1)
+
+                shopCur = shopCon.cursor()
+                shopCur.execute("SELECT id, order_number, itemid, in_process, completed, refunded, order_date, last_attempt, completed_date, discordMessageID, discordChannelID FROM order_processing WHERE orderCompleteNoticeSent IS False AND discordMessageID IS NOT NULL")
+                changedOrders = shopCur.fetchall()
+                if changedOrders != None:
+                    for order in changedOrders:
+                        order_id = order[0]
+                        order_number = order[1]
+                        itemid = order[2]
+                        in_process = order[3]
+                        completed = order[4]
+                        refunded = order[5]
+                        order_date = order[6]
+                        last_attempt = order[7]
+                        completed_date = order[8]
+                        discordMessageID = order[9]
+                        discordChannelID = order[10]
+
+                        #check if another item from orderis complete and mark status partially complete
+                        completedFound = 0
+                        incompleteFound = 0
+                        shopCur.execute("SELECT id, completed FROM order_processing WHERE order_number =?",(order_number, ))
+                        items = shopCur.fetchall()
+                        if items != None:
+                            if len(items) >= 2:
+                                #this is a kit, check if there are both complete and incomplete items for order
+                                for item in items:
+                                    if item[1] == True:
+                                        completedFound = 1
+                                    elif item[1] == False:
+                                        incompleteFound = 1
+
+                        #update discord message ID as a test
+                        if completedFound == 1 and incompleteFound == 1:
+                            status = "Partial Delivery Complete"
+                            embedvar = discord.Embed(title='Order Status', color = discord.Color.orange())
+                            embedvar.add_field(name="Order #:{} \nStatus: {}".format(order_number, status), value="Order Date: {}".format(order_date, ))
+                        
+                        elif completed == True and refunded == False:
+                            status = "Complete"
+                            embedvar = discord.Embed(title='Order Status', color = discord.Color.green())
+                            embedvar.add_field(name="Order #:{} \nStatus: {}".format(order_number, status), value="Order Date: {}\nCompleted Date: {}".format(order_date, completed_date))
+                            shopCur.execute("UPDATE order_processing SET orderCompleteNoticeSent =True WHERE ID =?",(order_id, ))
+                            shopCon.commit()
+                        elif refunded == True:
+                            status = "Refunded"
+                            embedvar = discord.Embed(title='Order Status', color = discord.Color.red())
+                            embedvar.add_field(name="Order #:{} \nStatus: {}".format(order_number, status), value="Order Date: {}\nLast delivery attempt date: {}".format(order_date, last_attempt))
+                            shopCur.execute("UPDATE order_processing SET orderCompleteNoticeSent =True WHERE ID =?",(order_id, ))
+                            shopCon.commit()
+                        elif in_process == True:
+                            status = "Processing"
+                            embedvar = discord.Embed(title='Order Status', color = discord.Color.blue())
+                            embedvar.add_field(name="Order #:{} \nStatus: {}".format(order_number, status), value="Order Date: {}\nLast delivery attempt date: {}".format(order_date, last_attempt))
+                        else:
+                            status = "Placed pending processing."
+                            embedvar = discord.Embed(title='Order Status', color = discord.Color.gold())
+                            embedvar.add_field(name="Order #:{} \nStatus: {}".format(order_number, status), value="Order Date: {}\nLast delivery attempt date: {}".format(order_date, last_attempt))
+                            
+                        channel = client.get_channel(int(discordChannelID))
+                        message = await channel.fetch_message(int(discordMessageID))
+                    
+                        
+                        
+                        
+                        await message.edit(embed=embedvar)
+            except Exception as e:
+                if "object has no attribute 'fetch_message'" in str(e):
+                    print(f"Order message went to a channel I dont know, can't update status")
+                    shopCur.execute("UPDATE order_processing SET orderCompleteNoticeSent =True WHERE order_number =?",(order_number, ))
+                    shopCon.commit()
+                else:
+                    print(f"error in order status watcher {e}")
+                pass
+            shopCur.close()
+            shopCon.close()
+            await asyncio.sleep(1)
+
+    def clean_text(rgx_list, text):
+        new_text = text
+        for rgx_match in rgx_list:
+            new_text = re.sub(rgx_match, '', new_text)
+        return new_text        
+
 
     @client.event
     async def on_ready():
@@ -383,6 +550,7 @@ def discord_bot():
         client.loop.create_task(registrationWatcher())
         client.loop.create_task(kill_log_watcher())
         client.loop.create_task(pending_Message_Watcher())
+        client.loop.create_task(orderStatusWatcher())
 
     @client.event
     async def on_message(message):
@@ -476,4 +644,73 @@ def discord_bot():
             author = message.author
             #await purchaseItem(senderID,userIN,channelID,author)
             await placeOrder(senderID,userIN,channelID)
+        
+        if message.content.startswith('!refund'):
+            userIN = message.content[8:]
+            senderID = message.author.name + "#" + message.author.discriminator
+            channelID = message.channel.id
+            await refundOrder(senderID,userIN,channelID)
+
+        if message.content.startswith('!gift'):
+            senderDiscordID = message.author.name + "#" + message.author.discriminator
+            pattern = re.compile(r'(?: <\S*[0-9]*>)?', re.IGNORECASE)
+            match = pattern.findall(message.content)
+            gift = clean_text(match, message.content)
+            gift = gift[6:]
+            mentioned = message.mentions
+            mentionedCount = len(mentioned)
+            senderCurrencyNeeded = int(gift) * mentionedCount
+            #get senders balance, make sure it's enough, then send gift
+            if int(gift) <= 0:
+                msg = "Cannot send null value gift."
+            else:
+                try:
+                    shopCon = sqlite3.connect(file_path_shop_db)
+
+                    shopCur = shopCon.cursor()
+                    shopCur.execute(f"SELECT walletBalance FROM accounts WHERE discordid =?", (senderDiscordID, ))
+                    senderCurrency = shopCur.fetchone()
+                    if senderCurrency == None:
+                        #YOU AINT GOT A WALLET
+                        msg = ("Wallet not found. Try !register first")
+                    else:
+                        senderCurrency = senderCurrency[0]
+                        if int(senderCurrency) >= int(senderCurrencyNeeded):
+                            #you have enough
+                            for mentions in mentioned:
+                                discordid = mentions.name + "#" + mentions.discriminator
+                                print(f"{senderDiscordID} is gifting {gift} to {discordid}")
+                                
+                                #Get starting balance
+                                shopCur.execute(f"SELECT walletBalance FROM accounts WHERE discordid =?", (discordid, ))
+                                recipWallet = shopCur.fetchone()
+                                if recipWallet == None:
+                                    msg = (f"{discordid} is not associated with a wallet. They will need to !register first")
+                                else:
+                                    #try to update
+                                    recipWallet = recipWallet[0]
+                                    newBalance = int(recipWallet) + int(gift)
+                                    shopCur.execute("UPDATE accounts SET walletBalance = ? WHERE discordid =?", (newBalance, discordid))
+                                    shopCon.commit()
+
+                                    #remove currency from sender
+                                    senderCurrency = int(senderCurrency) - int(gift)
+                                    shopCur.execute("UPDATE accounts SET walletBalance = ? WHERE discordid =?", (senderCurrency, senderDiscordID))
+                                    shopCon.commit()
+                                    msg = (f"{message.author.name} has sent a gift of {gift} {currency} to {discordid}")
+                                
+                        else:
+                            #you broke
+                            msg = ("Insufficient Balance")
+                            
+                        
+                        shopCur.close()
+                        shopCon.close()
+
+                except Exception as e:
+                    print(f"Error in Gifting: {e}")
+                    msg = ("Error in Gifting, Try again later")
+                    pass
+                await message.channel.send(msg)
+            
     client.run(config.Discord_API_KEY)
