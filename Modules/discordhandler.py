@@ -18,6 +18,7 @@ def discord_bot():
     import re
     import random
     import string
+    from datetime import datetime, timedelta
 
     # Get server id from config file and get server info from mariadb
     sys.path.insert(0, '..\\Modules')
@@ -242,6 +243,138 @@ def discord_bot():
             dbCon.close()
             await asyncio.sleep(1)  # task runs every 1 seconds
 
+    async def placeOrder(senderID,userIN,channelID):
+        sourcechannel = client.get_channel(channelID)
+        loadDate = datetime.now()
+        try:
+            try:
+                shopCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+
+            shopCur = shopCon.cursor()
+            #Get the price of the item
+            userINsplit = userIN.split("x")
+            if len(userINsplit) == 2:
+                itemNo = userINsplit[0]
+                itemQty = userINsplit[1]
+            else:
+                itemNo = userINsplit[0]
+                itemQty = 1
+
+            shopCur.execute(f"SELECT itemname, price, itemid, count, itemType, kitID, cooldown FROM shop_items WHERE id =? AND enabled =1", (itemNo, ))
+            itemDetails = shopCur.fetchone()
+            if itemDetails == None:
+                print("Item not found")
+                msg = "Item not found"
+            else:
+                itemname = itemDetails[0]
+                itemcount = int(itemDetails[3]) * int(itemQty)
+                itemid = int(itemDetails[2])
+                itemprice = int(itemDetails[1]) * int(itemQty)
+                itemType = itemDetails[4]
+                itemKitID = itemDetails[5]
+                cooldown = int(itemDetails[6]) * int(itemQty)
+                #Assign an order number
+                shopCur.execute("SELECT ID FROM shop_log ORDER BY ID DESC")
+                orderNums = shopCur.fetchone()
+                if orderNums != None:
+                    order_number = int(orderNums[0]) + 1
+                else:
+                    order_number = 1
+
+                print(order_number)
+                order_date = datetime.now()
+                last_attempt = datetime.min
+                #get the wallet value of the user
+                shopCur.execute(f"SELECT walletBalance,conanplatformid, steamplatformid FROM accounts WHERE discordid =?", (senderID, ))
+                senderDetails = shopCur.fetchone()
+                if senderDetails == None:
+                    msg = (f"Couldn't find any {config.Shop_CurrencyName} for {senderID}. Try !register first.")
+                else:
+                    senderCurrency = senderDetails[0]
+                    platformid = senderDetails[1]
+                    steamid = senderDetails[2]
+                    if int(senderCurrency) >= int(itemprice):
+                        print(f"{senderID} Has enough {config.Shop_CurrencyName} to purchase {itemname} for {itemprice}")
+                        #check if cooldown for this item is up for the user
+                        shopCur.execute("SELECT logtimestamp FROM shop_log WHERE item =? AND player=? ORDER BY ID Desc", (itemname, senderID))
+                        lastPurchase = shopCur.fetchone()
+                        if lastPurchase != None:
+                            timestamp = datetime.strptime(lastPurchase[0], "%m-%d-%YT%H:%M:%S")
+                            now = datetime.now()
+                            coolDownExpires = timestamp + timedelta(minutes=cooldown)
+                            if now > coolDownExpires:
+                                print("Cool down is up. Purchase allowed")
+                                coolDownOK = True
+                            else:
+                                coolDownOK = False
+                                print(f"Cannot purchase again yet, Cooldown expires {coolDownExpires}")
+                                timediff = coolDownExpires - timestamp
+                                status = f"Cannot purchase again yet, Cooldown expires in {timediff}"
+                                msg = status
+                        else: 
+                            coolDownOK = True
+
+                        if coolDownOK:
+                            if itemType == 'single':
+                                print("item type is single, placing order")
+                                shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
+                                shopCon.commit()
+                            elif itemType == 'kit':
+                                print("item type is kit, processing order")
+                                #get items in the kit
+                                shopCur.execute("SELECT itemID, count, name FROM shop_kits WHERE kitID =?",(itemKitID, ))
+                                items = shopCur.fetchall()
+                                if items == None:
+                                    print("No items associated with kit, order canceled")
+                                    msg = "No items associated with kit, order canceled"
+                                else:
+                                    for item in items: 
+                                        itemid = item[0]
+                                        itemcount = item[1]
+                                        shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
+                                        shopCon.commit()
+                            else:
+                                print("couldn't identify item type. Canceling order")
+                                msg = "Couldn't identify item type. Canceling order"
+
+
+                            
+                            #log purchase
+                            status = "Order Placed"
+                            shopCur.execute("INSERT INTO shop_log (item, count, price, player, status, timestamp) VALUES (?,?,?,?,?,?)", (itemname, itemcount, itemprice, senderID, status, loadDate))
+                            shopCon.commit()
+                            #remove currency
+                            newBalance = int(senderCurrency) - int(itemprice)
+                            shopCur.execute(f"UPDATE accounts SET walletBalance = ? WHERE discordid =?",(int(newBalance), senderID))
+                            shopCon.commit()
+                            msg = f"Order# {order_number} has been placed. Your new {config.Shop_CurrencyName} balance is {newBalance}. You can refund pending orders with !refund {order_number}"
+
+                    else:
+                        msg = "Insufficient Balance"
+            
+        except Exception as e:
+                print(f"Error on DB: {e}")
+                msg = ("Couldn't connect to DB. Try again later")
+                pass
+        message = await sourcechannel.send(msg)
+        message_id = message.id
+        discordChannelID = sourcechannel.id
+        #insert message ID for order_num
+        if msg != "Item not found":
+            shopCur.execute("UPDATE order_processing SET discordMessageID =?, discordChannelID =? WHERE order_number =?", (message_id, discordChannelID, order_number))
+        shopCur.close()
+        shopCon.close()
+
     @client.event
     async def on_ready():
         print('We have logged in as {0.user}'.format(client))
@@ -301,7 +434,7 @@ def discord_bot():
             dbCon.close()
             await message.author.send(f"Please enter '!register {code}' into conan in-game chat without the quotes. Recommend entering in /local or /clan")
 
-        if message.content == '!coin':
+        if message.content == '!coin' or message.content == '!coins' or message.content == '!currency' or message.content == '!balance':
             discordID = message.author.name + '#' + message.author.discriminator
             discordObjID = message.author.id
             print(discordID)
@@ -336,4 +469,11 @@ def discord_bot():
             dbCon.close()
             await message.channel.send(msg)
 
+        if message.content.startswith('!buy'):
+            userIN = message.content[5:]
+            senderID = message.author.name + "#" + message.author.discriminator
+            channelID = message.channel.id
+            author = message.author
+            #await purchaseItem(senderID,userIN,channelID,author)
+            await placeOrder(senderID,userIN,channelID)
     client.run(config.Discord_API_KEY)

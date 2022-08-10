@@ -63,6 +63,7 @@ if __name__ == '__main__':
         CREATE TABLE IF NOT EXISTS order_processing (
             id						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the order_processing Table',
             order_number			INT NOT NULL						COMMENT 'FK: Unique identifier for the the specific order the player makes',
+            order_value             INT NOT NULL						COMMENT 'The value of the order',
             itemid		 			INT NOT NULL						COMMENT 'FK: Unique identifier for the specific item',
             count		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
             purchaser_platformid 	CHAR(100) NOT NULL  	    		COMMENT 'Funcom Platform ID of the player who made the order',
@@ -73,9 +74,9 @@ if __name__ == '__main__':
             order_date	 			DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the order was received by the shop bot',
             last_attempt 			DATETIME 							COMMENT 'Last time the shop bot tried to deliver the item to the player',
             completed_date	 		DATETIME							COMMENT 'Date and time of when the order was confirmed complete by the shop bot',
-            discordChannelID 		CHAR(100) NOT NULL			        COMMENT 'ID of the channel in discord to post the order confirmation to',
-            discordMessageID 		CHAR(100) NOT NULL UNIQUE			COMMENT 'ID of the message to update order status in discord',
-            orderCompleteNoticeSent	BOOL NOT NULL						COMMENT 'Boolean to indicate if the order complete notice has been sent to the player',
+            discordChannelID 		CHAR(100) 			                COMMENT 'ID of the channel in discord to post the order confirmation to',
+            discordMessageID 		CHAR(100)               			COMMENT 'ID of the message to update order status in discord',
+            orderCompleteNoticeSent	BOOL DEFAULT '0'					COMMENT 'Boolean to indicate if the order complete notice has been sent to the player',
             PRIMARY KEY (id)
         );
     """
@@ -156,6 +157,9 @@ if __name__ == '__main__':
             enabled		 			INT NOT NULL DEFAULT 0				COMMENT 'Make the item available to the store',
             itemType 				CHAR(100) NOT NULL      			COMMENT 'Type of the item',
             kitId		 			MEDIUMINT NULL						COMMENT 'FK to the shop_kits table',
+            description             Char(255)                           COMMENT 'Description of the item',
+            category                Char(255)                           COMMENT 'Category of the item',
+            cooldown                MEDIUMINT DEFAULT 0                 COMMENT 'Cooldown of the item',
             PRIMARY KEY (ID)
         );
     """

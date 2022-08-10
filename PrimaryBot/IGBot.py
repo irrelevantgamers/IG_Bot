@@ -31,6 +31,8 @@ if __name__ == "__main__":
     userSyncRunning = False
     gameLogWatcherRunning = False
     accountPayrollRunning = False
+    orderProcessingRunning = False
+    
     #start modules and loop to check for status    
     while True:
         if outOfKarma == False:
