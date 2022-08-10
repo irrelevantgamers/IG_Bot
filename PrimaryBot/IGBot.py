@@ -17,6 +17,7 @@ from discordhandler import discord_bot
 from usersync import runSync
 from game_log_watcher import game_log_watcher
 from accountpayroll import pay_users
+from orderprocessing import processOrderLoop
 
 if __name__ == "__main__":
     # Run setup for the bot
@@ -108,6 +109,21 @@ if __name__ == "__main__":
                 print(f'Account Payroll error: {e}')
                 accountPayrollRunning = False
 
+            try:
+                if not orderProcessingRunning:
+                    orderProcessing = multiprocessing.Process(target=processOrderLoop())
+                    orderProcessing.start()
+                    orderProcessingRunning = True
+                if orderProcessing.is_alive():
+                    print(f'Status: Order Processing is still running')
+                    orderProcessingRunning = True
+                else:
+                    print(f'Status: Order Processing is not running. Restarting...')
+                    orderProcessingRunning = False
+            except Exception as e:
+                print(f'Order Processing error: {e}')
+                orderProcessingRunning = False
+
             attempts = 0
             rconSuccess = False
             while rconSuccess == False and attempts <= 5:
@@ -136,5 +152,7 @@ if __name__ == "__main__":
             print("Out of Karma! Stopping all rcon dependant modules until karma is regained...")
             userSync.terminate()
             userSyncRunning = False
+            orderProcessing.terminate()
+            orderProcessingRunning = False
             time.sleep(300) # wait 5 minutes before releasing modules
             outOfKarma = False

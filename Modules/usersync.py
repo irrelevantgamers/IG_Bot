@@ -11,28 +11,6 @@ import sys
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 import config
-#def connect_mariadb():
-#    #global mariaCon
-#    #global mariaCur
-#    try:
-#        mariaCon = mariadb.connect(
-#            user=config.DB_user,
-#            password=config.DB_pass,
-#            host=config.DB_host,
-#            port=config.DB_port,
-#            database=config.DB_name
-#
-#        )
-#    except mariadb.Error as e:
-#        print(f"Error connecting to MariaDB Platform: {e}")
-#        sys.exit(1)
-#
-#    mariaCur = mariaCon.cursor()
-#
-#
-#def close_mariaDB():
-#    mariaCur.close()
-#    mariaCon.close()
 
 def syncPlayers(serverid):
     try:
@@ -67,7 +45,7 @@ def syncPlayers(serverid):
     loadDate = (datetime.now())
     success = 0
     #recreate currentUsers table
-    dropCurrentUsers_query = f"""TRUNCATE TABLE {serverName}_currentusers;"""
+    clearCurrentUsers_query = f"""DELETE FROM {serverName}_currentusers;"""
     createCurrentUsers_query = f"""
         CREATE TABLE IF NOT EXISTS {serverName}_currentusers (
             conid           CHAR(100) NOT NULL UNIQUE COMMENT 'Connection ID of the player',
@@ -83,10 +61,8 @@ def syncPlayers(serverid):
     
    
     try:
-        syncCur.execute(dropCurrentUsers_query)
+        syncCur.execute(clearCurrentUsers_query)
         syncCon.commit()
-        #mariaCur.execute(createCurrentUsers_query)
-        #mariaCon.commit()
     except Exception as e:
         print(f"Error creating currentUsers table from usersync script: {e}")
         sys.exit(1)
@@ -159,7 +135,7 @@ def syncPlayers(serverid):
                 userid = row[1]
                 platformid = row[2]
                 steamid = row[3]
-                syncCur.execute(f"SELECT * FROM accounts WHERE conanuserid =? AND conanplatformid =?", (userid, platformid))
+                syncCur.execute(f"SELECT * FROM accounts WHERE conanplatformid =?", (platformid, ))
                 result = syncCur.fetchone()
                 if result == None:
                     syncCur.execute(f"INSERT INTO accounts (conanplayer, conanuserid, conanplatformid, steamplatformid, walletbalance, lastupdated) VALUES (?, ?, ?, ?, ?, ?)", (player, userid, platformid, steamPlatformId, 0, loadDate))

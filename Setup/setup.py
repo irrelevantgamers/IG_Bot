@@ -64,7 +64,7 @@ if __name__ == '__main__':
             id						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the order_processing Table',
             order_number			INT NOT NULL						COMMENT 'FK: Unique identifier for the the specific order the player makes',
             itemid		 			INT NOT NULL						COMMENT 'FK: Unique identifier for the specific item',
-            counts		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
+            count		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
             purchaser_platformid 	CHAR(100) NOT NULL  	    		COMMENT 'Funcom Platform ID of the player who made the order',
             purchaser_steamid 		CHAR(100) NOT NULL	        		COMMENT 'steamID of the player who made the order',
             in_process	 			BOOL NOT NULL						COMMENT 'Boolean to indicate if the order is in process',

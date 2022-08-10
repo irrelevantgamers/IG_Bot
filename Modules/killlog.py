@@ -256,6 +256,7 @@ def kill_stream():
                                         balance = dbCur.fetchone()
                                         if balance != None:
                                             wantedKill = True
+                                            earnratemultiplier = balance[1]
                                             newbalance = int(balance[0]) + newbounty
                                             dbCur.execute(
                                                 "UPDATE accounts SET walletbalance =? WHERE conanplatformid =?",
