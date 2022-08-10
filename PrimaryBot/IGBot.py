@@ -7,7 +7,8 @@ import sys
 import subprocess
 import multiprocessing
 import valve.rcon
-
+from concurrent.futures import Executor, process
+import concurrent.futures
 
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
@@ -32,20 +33,20 @@ if __name__ == "__main__":
     gameLogWatcherRunning = False
     accountPayrollRunning = False
     orderProcessingRunning = False
-    
-    #start modules and loop to check for status    
+
+    #start modules and loop to check for status   
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=10) 
     while True:
         if outOfKarma == False:
             try:
                 if not killlogRunning:
-                    killlog = multiprocessing.Process(target=kill_stream)
-                    killlog.start()
+                    killlog = executor.submit(kill_stream)
                     killlogRunning = True
-                if killlog.is_alive():
-                    print(f'Status: Killlog is still running')
-                    killlogRunning = True
-                else:
+                if killlog.done():
                     print(f'Status: Killlog is not running. Restarting...')
+                    killlogRunning = False
+                else:
+                    print(f'Status: Killlog is still running')
                     killlogRunning = False
             except Exception as e:
                 print(f'Kill Log Error: {e}')
@@ -53,75 +54,70 @@ if __name__ == "__main__":
             
             try:
                 if not discordhandlerRunning:
-                    discordhandler = multiprocessing.Process(target=discord_bot)
-                    discordhandler.start()
+                    discordhandler = executor.submit(discord_bot)
                     discordhandlerRunning = True
-                if discordhandler.is_alive():
-                    print(f'Status: Discord Handler is still running')
-                    discordhandlerRunning = True
-                else:
+                if discordhandler.done():
                     print(f'Status: Discord Handler is not running. Restarting...')
                     discordhandlerRunning = False
+                else:
+                    print(f'Status: Discord Handler is still running')
+                    discordhandlerRunning = True
             except Exception as e:
                 print(f'Discord Handler Error: {e}')
                 discordhandlerRunning = False
 
             try:
                 if not userSyncRunning:
-                    userSync = multiprocessing.Process(target=runSync, args=(False,))
-                    userSync.start()
+                    userSync = executor.submit(runSync, False)
                     userSyncRunning = True
-                if userSync.is_alive():
-                    print(f'Status: User Sync is still running')
-                    userSyncRunning = True
-                else:
+                if userSync.done():
                     print(f'Status: User Sync is not running. Restarting...')
                     userSyncRunning = False
+                else:
+                    print(f'Status: User Sync is still running')
+                    userSyncRunning = True
             except Exception as e:
                 print(f'User Sync Error: {e}')
                 userSyncRunning = False
 
             try:
                 if not gameLogWatcherRunning:
-                    gameLogWatcher = multiprocessing.Process(target=game_log_watcher)
-                    gameLogWatcher.start()
+                    gameLogWatcher = executor.submit(game_log_watcher)
                     gameLogWatcherRunning = True
-                if gameLogWatcher.is_alive():
-                    print(f'Status: Game Log Watcher is still running')
-                    gameLogWatcherRunning = True
-                else:
+                if gameLogWatcher.done():
                     print(f'Status: Game Log Watcher is not running. Restarting...')
                     gameLogWatcherRunning = False
+                else:
+                    print(f'Status: Game Log Watcher is still running')
+                    gameLogWatcherRunning = True
             except Exception as e:
                 print(f'Game Log Watcher error: {e}')
                 gameLogWatcherRunning = False
 
             try:
                 if not accountPayrollRunning:
-                    accountPayroll = multiprocessing.Process(target=pay_users)
-                    accountPayroll.start()
+                    accountPayroll = executor.submit(pay_users)
                     accountPayrollRunning = True
-                if accountPayroll.is_alive():
-                    print(f'Status: Account Payroll is still running')
-                    accountPayrollRunning = True
-                else:
+                if accountPayroll.done():
                     print(f'Status: Account Payroll is not running. Restarting...')
                     accountPayrollRunning = False
+                else:
+                    print(f'Status: Account Payroll is still running')
+                    accountPayrollRunning = True
             except Exception as e:
                 print(f'Account Payroll error: {e}')
                 accountPayrollRunning = False
 
             try:
                 if not orderProcessingRunning:
-                    orderProcessing = multiprocessing.Process(target=processOrderLoop())
-                    orderProcessing.start()
+                    orderProcessing = executor.submit(processOrderLoop)
                     orderProcessingRunning = True
-                if orderProcessing.is_alive():
-                    print(f'Status: Order Processing is still running')
-                    orderProcessingRunning = True
-                else:
+                if orderProcessing.done():
                     print(f'Status: Order Processing is not running. Restarting...')
                     orderProcessingRunning = False
+                else:
+                    print(f'Status: Order Processing is still running')
+                    orderProcessingRunning = True
             except Exception as e:
                 print(f'Order Processing error: {e}')
                 orderProcessingRunning = False
@@ -152,9 +148,9 @@ if __name__ == "__main__":
             time.sleep(30) # wait 30 seconds before checking status
         else:
             print("Out of Karma! Stopping all rcon dependant modules until karma is regained...")
-            userSync.terminate()
+            userSync.cancel()
             userSyncRunning = False
-            orderProcessing.terminate()
+            orderProcessing.cancel()
             orderProcessingRunning = False
             time.sleep(300) # wait 5 minutes before releasing modules
             outOfKarma = False

@@ -1,3 +1,6 @@
+from time import sleep
+
+
 def game_log_watcher():
     import re
     import time
