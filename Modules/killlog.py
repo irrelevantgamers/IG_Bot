@@ -115,6 +115,11 @@ def kill_stream():
                     else:
                         sameClan = False
 
+                    #check kill_log to see if same clan in last 24 hours
+                    dbCur.execute("SELECT ID FROM {server}_kill_log WHERE player_clan = victim_clan AND player = ? AND loadDate > ?".format(server=serverid), (player, datetime.now() - timedelta(hours=24)))
+                    same_Clan_Check = dbCur.fetchone()
+                    if same_Clan_Check is not None:
+                        sameClan = True
                     playerLevel = exiled_gamedb_cur.execute("Select level FROM characters WHERE char_name =?",
                                                             (player,))
                     playerLevel = playerLevel.fetchone()
