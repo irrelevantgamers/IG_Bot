@@ -68,7 +68,7 @@ if __name__ == '__main__':
             itemid		 			INT NOT NULL						COMMENT 'FK: Unique identifier for the specific item',
             itemType                CHAR(100) NOT NULL					COMMENT 'The type of item',
             server                  CHAR(100)               			COMMENT 'The server the item is being sent to',
-            count		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
+            itemcount		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
             purchaser_platformid 	CHAR(100) NOT NULL  	    		COMMENT 'Funcom Platform ID of the player who made the order',
             purchaser_steamid 		CHAR(100) NOT NULL	        		COMMENT 'steamID of the player who made the order',
             in_process	 			BOOL NOT NULL						COMMENT 'Boolean to indicate if the order is in process',
@@ -156,7 +156,7 @@ if __name__ == '__main__':
             itemName 				CHAR(100) NOT NULL UNIQUE			COMMENT 'Name of the item',
             price		 			INT NOT NULL DEFAULT 0				COMMENT 'Price of the item',
             itemId		 			INT NOT NULL        				COMMENT 'In game item ID used for rcon commands',
-            count		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
+            itemcount		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
             enabled		 			INT NOT NULL DEFAULT 0				COMMENT 'Make the item available to the store',
             itemType 				CHAR(100) NOT NULL      			COMMENT 'Type of the item',
             kitId		 			MEDIUMINT NULL						COMMENT 'FK to the shop_kits table',
@@ -171,9 +171,9 @@ if __name__ == '__main__':
         CREATE TABLE IF NOT EXISTS shop_kits (
             ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the shop_kits Table',
             kitId		 			INT NOT NULL			    		COMMENT 'ID of kit this item belongs to',
-            Name 				    CHAR(100) NOT NULL      			COMMENT 'Name of the conan item in the kit',
+            kitName 				    CHAR(100) NOT NULL      			COMMENT 'Name of the conan item in the kit',
             itemId		 			INT NOT NULL						COMMENT 'in game item ID used for rcon commands',
-            count		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
+            itemcount		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
             PRIMARY KEY (ID)
         );
     """
@@ -181,7 +181,7 @@ if __name__ == '__main__':
         CREATE TABLE IF NOT EXISTS shop_log (
             ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the shop_log Table also serves as order_number',
             item 					CHAR(100) NOT NULL					COMMENT 'Item which was purchased in the order',
-            count		 			CHAR(100) NOT NULL					COMMENT 'How many of the item',
+            itemcount		 			CHAR(100) NOT NULL					COMMENT 'How many of the item',
             price		 			CHAR(100) NOT NULL					COMMENT 'Price of the item',
             player		 			CHAR(100) NOT NULL					COMMENT 'Player of the order',
             status		 			CHAR(100) NOT NULL					COMMENT 'Order status',
@@ -287,7 +287,7 @@ if __name__ == '__main__':
     server_server_buffs = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_server_buffs (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the server_buffs Table',
-            name            CHAR(100) NOT NULL COMMENT 'Name of the buff',
+            buffname            CHAR(100) NOT NULL COMMENT 'Name of the buff',
             active          BOOL NOT NULL COMMENT 'If the buff is active',
             activateCommand CHAR(100) NOT NULL COMMENT 'Command to activate the buff',
             deactivateCommand CHAR(100) NOT NULL COMMENT 'Command to deactivate the buff',
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     server_vault_rentals = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_vault_rentals (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the vault_rentals Table',
-            name            CHAR(100) NOT NULL COMMENT 'Name of the vault',
+            vaultname            CHAR(100) NOT NULL COMMENT 'Name of the vault',
             renterDiscordID CHAR(100) NOT NULL COMMENT 'Discord ID of the player who rented the vault',
             renterPlatformID CHAR(100) NOT NULL COMMENT 'Funcom Platform ID of the player who rented the vault',
             renterClanName  CHAR(100) NOT NULL COMMENT 'Clan name of the player who rented the vault',
@@ -584,7 +584,7 @@ if __name__ == '__main__':
         mariaCur.execute("SELECT * FROM {server}_server_buffs".format(server=config.Server_Name))
         buffs = mariaCur.fetchall()
         if len(buffs) == 0 or buffs == None:
-            mariaCur.execute("INSERT INTO {server}_server_buffs (name, active, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')".format(server=config.Server_Name),(datetime.now(), datetime.now()))
+            mariaCur.execute("INSERT INTO {server}_server_buffs (buffname, active, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')".format(server=config.Server_Name),(datetime.now(), datetime.now()))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -597,14 +597,14 @@ if __name__ == '__main__':
         mariaCur.execute("SELECT * FROM shop_items")
         items = mariaCur.fetchall()
         if len(items) == 0 or items == None:
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Stone', 1, 10001, 1, True, 'single', NULL, 'Stone', 'Materials', 0, 100)")
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Plant Fiber and Stone Kit', 1, 0, 1, True, 'kit', 1, 'Stone and plant fiber', 'Material Kits', 0, 1)")
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Double XP', 1, 0, 1, True, 'serverBuff', NULL, 'Double XP for your last known server', 'Server Buffs', 30, 1)")
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Vault Rental/Renewal', 1, 0, 1, True, 'vault', NULL, 'Clan vault for your last known server', 'Vaults', 30, 1)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Stone', 1, 10001, 1, True, 'single', NULL, 'Stone', 'Materials', 0, 100)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Plant Fiber and Stone Kit', 1, 0, 1, True, 'kit', 1, 'Stone and plant fiber', 'Material Kits', 0, 1)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Double XP', 1, 1, 1, True, 'serverBuff', NULL, 'Double XP for your last known server', 'Server Buffs', 30, 1)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Vault Rental/Renewal', 1, 0, 1, True, 'vault', NULL, 'Clan vault for your last known server', 'Vaults', 30, 1)")
 
             #add kits
-            mariaCur.execute("INSERT INTO shop_kits (kitId, Name, itemId, count) VALUES (1, 'Stone', 10001, 10)")
-            mariaCur.execute("INSERT INTO shop_kits (kitId, Name, itemId, count) VALUES (1, 'Plant Fiber', 12001, 10)")
+            mariaCur.execute("INSERT INTO shop_kits (kitId, kitName, itemId, itemcount) VALUES (1, 'Stone', 10001, 10)")
+            mariaCur.execute("INSERT INTO shop_kits (kitId, kitName, itemId, itemcount) VALUES (1, 'Plant Fiber', 12001, 10)")
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):

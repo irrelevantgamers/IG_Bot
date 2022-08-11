@@ -23,7 +23,7 @@ def processOrderLoop():
 
                 mariaCur = mariaCon.cursor()
                 discordID = purchaser
-                mariaCur.execute("SELECT name, active, activateCommand, deactivateCommand, lastActivated, endTime FROM {servername}_server_buffs WHERE name = ?".format(servername=server),(buffName,))
+                mariaCur.execute("SELECT buffname, active, activateCommand, deactivateCommand, lastActivated, endTime FROM {servername}_server_buffs WHERE buffname = ?".format(servername=server),(buffName,))
                 buffList = mariaCur.fetchone()
                 Active = buffList[1]
                 ActivateCommand = buffList[2]
@@ -41,7 +41,7 @@ def processOrderLoop():
                 if endTime == None:
                     newEndTime = now + timedelta(minutes=30)
 
-                mariaCur.execute("UPDATE {servername}_server_buffs SET endTime = ?, lastActivated = ?, active =True, lastActivatedBy = ? WHERE name = ?".format(servername=server),(newEndTime, now, discordID, buffName))
+                mariaCur.execute("UPDATE {servername}_server_buffs SET endTime = ?, lastActivated = ?, active =True, lastActivatedBy = ? WHERE buffname = ?".format(servername=server),(newEndTime, now, discordID, buffName))
                 mariaCon.commit()
 
                 #get server rcon
@@ -102,7 +102,7 @@ def processOrderLoop():
         eligibleProcessTime = now - timedelta(minutes=5)
         
         #Get incomplete orders by newest
-        shopCur.execute("SELECT order_number, itemid, count, purchaser_platformid, purchaser_steamid, order_date FROM order_processing WHERE completed = False AND in_process = False AND refunded = False AND last_attempt <= ? ORDER BY order_date ASC", (eligibleProcessTime,))
+        shopCur.execute("SELECT order_number, itemid, itemcount, purchaser_platformid, purchaser_steamid, order_date FROM order_processing WHERE completed = False AND in_process = False AND refunded = False AND last_attempt <= ? ORDER BY order_date ASC", (eligibleProcessTime,))
         NewestOrder = shopCur.fetchone()
         try:
             if NewestOrder != None:
@@ -113,7 +113,7 @@ def processOrderLoop():
                 shopCon.commit()
 
                 #Get all items associated with order number
-                shopCur.execute("SELECT id, order_number, itemid, itemType, count, purchaser_platformid, purchaser_steamid, order_date FROM order_processing WHERE order_number =?",(orderNumber, ))
+                shopCur.execute("SELECT id, order_number, itemid, itemType, itemcount, purchaser_platformid, purchaser_steamid, order_date FROM order_processing WHERE order_number =?",(orderNumber, ))
                 orderedItems = shopCur.fetchall()
                 if orderedItems != None:
                     userIsOffline = 0
@@ -128,10 +128,7 @@ def processOrderLoop():
                         print(f"Processing {order_number}: Current order_processing_id {order_id}: Item ID {itemid}")
                         if itemType == "serverBuff":
                             print("Item is a server buff")
-                            #get buff name
-                            shopCur.execute("SELECT itemname FROM shop_items WHERE itemid =?",(itemid, ))
-                            buffName = shopCur.fetchone()[0]
-                            print(buffName)
+                            
                             #get server name
                             shopCur.execute("SELECT lastServer, discordid FROM accounts WHERE conanPlatformID =?",(platformid, ))
                             info = shopCur.fetchone()
@@ -139,7 +136,11 @@ def processOrderLoop():
                             purchaser = info[1]
                             print(server)
                             print(purchaser)
-                            print(f'activating buff on {server}')
+                            #get buff name
+                            shopCur.execute("SELECT buffname FROM {servername}_server_buffs WHERE id =?".format(servername=server),(itemid, ))
+                            buffName = shopCur.fetchone()[0]
+                            print(buffName)
+                            print(f'activating buff {buffName} on {server}')
                             rconSuccess = activateBuff(buffName, server, purchaser)
                             #mark order as completed
                             
