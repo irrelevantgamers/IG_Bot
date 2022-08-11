@@ -324,7 +324,7 @@ def discord_bot():
             if itemDetails == None:
                 print("Item not found")
                 msg = "Item not found"
-            elif itemDetails[7] < itemQty:
+            elif int(itemDetails[7]) < int(itemQty):
                 msg = "You can only purchase {} of this item at a time".format(itemDetails[7])
             else:
                 itemname = itemDetails[0]
@@ -342,7 +342,6 @@ def discord_bot():
                 else:
                     order_number = 1
 
-                print(order_number)
                 order_date = datetime.now()
                 last_attempt = datetime.min
                 #get the wallet value of the user
@@ -406,15 +405,60 @@ def discord_bot():
                                     msg = "No last server found, order canceled. Please try again once your are online."
                                 else:
                                     lastServer = lastServer[0]
-                                    shopCur.execute("SELECT ID FROM {server}_server_buffs WHERE name =?".format(server=lastServer),(itemname, ))
-                                    itemid = shopCur.fetchone()
-                                    if itemid == None:
-                                        print("No item found, order canceled")
-                                        msg = "No item found, order canceled"
+                                    shopCur.execute("SELECT ID FROM {servername}_server_buffs WHERE name =?".format(servername=lastServer),(itemname, ))
+                                    buffid = shopCur.fetchone()[0]
+                                    if buffid == None:
+                                        msg = "Buff not found, order canceled"
                                     else:
-                                        shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, itemType, server, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemType, lastServer, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
+                                        print("adding buff order")
+                                        print(
+                                            order_number, 
+                                            int(itemprice), 
+                                            itemid, 
+                                            itemType, 
+                                            lastServer, 
+                                            itemcount, 
+                                            platformid, 
+                                            steamid, 
+                                            False, 
+                                            False, 
+                                            False, 
+                                            order_date, 
+                                            last_attempt)
+                                        insertquery = """INSERT INTO order_processing 
+                                        (
+                                            order_number, 
+                                            order_value, 
+                                            itemid, 
+                                            itemType, 
+                                            server, 
+                                            count, 
+                                            purchaser_platformid, 
+                                            purchaser_steamid, 
+                                            in_process, 
+                                            completed, 
+                                            refunded, 
+                                            order_date, 
+                                            last_attempt
+                                            ) values (?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                                        shopCur.execute(insertquery,(
+                                            order_number, 
+                                            itemprice, 
+                                            itemid, 
+                                            itemType, 
+                                            lastServer, 
+                                            itemcount, 
+                                            platformid, 
+                                            steamid, 
+                                            False, 
+                                            False, 
+                                            False, 
+                                            order_date, 
+                                            last_attempt))
+                                        
                                         shopCon.commit()
                                         order_placed = True
+                                        print("order placed")
                             elif itemType == 'vault':
                                 #get vault list for users last seen server
                                 shopCur.execute("SELECT lastServer FROM Accounts WHERE discordid =?",(senderID, ))
