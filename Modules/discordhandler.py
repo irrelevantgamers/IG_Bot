@@ -242,7 +242,56 @@ def discord_bot():
             dbCur.close()
             dbCon.close()
             await asyncio.sleep(1)  # task runs every 1 seconds
+    
+    async def updateShopList():
+        while True:
+            print("Updating Shop")
+            channel = client.get_channel(int(config.Discord_Items_for_Sale_Channel))
+            await channel.purge()
+            
+            
+            try:
+                shopCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
 
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            try:
+                shopCur = shopCon.cursor()
+                shopCur.execute("SELECT DISTINCT(category) FROM shop_items WHERE enabled = True AND category != 'NULL' ORDER BY category ASC")
+                categories = shopCur.fetchall()
+                for category in categories:
+                    cat = category[0]
+                    embedvar = discord.Embed(title=cat)
+                    embedvar.set_footer(text="To buy an item go to purchasing and use !buy followed by the item ID. (Optional you can include how many times you want to buy with x# \nExample to buy 1: !buy 1\nExample to buy 1 twice: !buy 1x2 ")
+                    shopCur.execute(f"SELECT * FROM shop_items WHERE enabled = True AND category = '{cat}' ORDER BY id ASC")
+                    shop_items = shopCur.fetchall()
+
+
+                    for row in shop_items:
+                        itemid = row[0]
+                        name = row[1]
+                        price = row[2]
+                        count = row[4]
+                        description = row[8]
+                        category = [9]
+                        
+                        embedvar.add_field(name="ID: {} \tName: {} x {}".format(itemid, count, name), value="Price: {} {}\nDescription: {}".format(price, config.Shop_CurrencyName, description),inline=False)
+                    await channel.send(embed=embedvar)
+
+            except Exception as e:
+                    print(f"Update Shop Error: {e}")
+                    pass
+            shopCur.close()
+            shopCon.close()
+        
+            await asyncio.sleep(600) #updates every 10 minutes
     async def placeOrder(senderID,userIN,channelID):
         sourcechannel = client.get_channel(channelID)
         loadDate = datetime.now()
@@ -270,11 +319,13 @@ def discord_bot():
                 itemNo = userINsplit[0]
                 itemQty = 1
 
-            shopCur.execute(f"SELECT itemname, price, itemid, count, itemType, kitID, cooldown FROM shop_items WHERE id =? AND enabled =1", (itemNo, ))
+            shopCur.execute(f"SELECT itemname, price, itemid, count, itemType, kitID, cooldown, maxCountPerPurchase FROM shop_items WHERE id =? AND enabled =1", (itemNo, ))
             itemDetails = shopCur.fetchone()
             if itemDetails == None:
                 print("Item not found")
                 msg = "Item not found"
+            elif itemDetails[7] < itemQty:
+                msg = "You can only purchase {} of this item at a time".format(itemDetails[7])
             else:
                 itemname = itemDetails[0]
                 itemcount = int(itemDetails[3]) * int(itemQty)
@@ -325,10 +376,12 @@ def discord_bot():
                             coolDownOK = True
 
                         if coolDownOK:
+                            order_placed = False
                             if itemType == 'single':
                                 print("item type is single, placing order")
-                                shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
+                                shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, itemType, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemType, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
                                 shopCon.commit()
+                                order_placed = True
                             elif itemType == 'kit':
                                 print("item type is kit, processing order")
                                 #get items in the kit
@@ -338,38 +391,76 @@ def discord_bot():
                                     print("No items associated with kit, order canceled")
                                     msg = "No items associated with kit, order canceled"
                                 else:
+                                    order_placed = True
                                     for item in items: 
                                         itemid = item[0]
                                         itemcount = item[1]
-                                        shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
+                                        shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, itemType, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemType, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
                                         shopCon.commit()
+                            elif itemType == 'serverBuff':
+                                #get vault list for users last seen server
+                                shopCur.execute("SELECT lastServer FROM Accounts WHERE discordid =?",(senderID, ))
+                                lastServer = shopCur.fetchone()
+                                if lastServer == None:
+                                    print("No last server found, order canceled")
+                                    msg = "No last server found, order canceled. Please try again once your are online."
+                                else:
+                                    lastServer = lastServer[0]
+                                    shopCur.execute("SELECT ID FROM {server}_server_buffs WHERE name =?".format(server=lastServer),(itemname, ))
+                                    itemid = shopCur.fetchone()
+                                    if itemid == None:
+                                        print("No item found, order canceled")
+                                        msg = "No item found, order canceled"
+                                    else:
+                                        shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, itemType, server, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemType, lastServer, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
+                                        shopCon.commit()
+                                        order_placed = True
+                            elif itemType == 'vault':
+                                #get vault list for users last seen server
+                                shopCur.execute("SELECT lastServer FROM Accounts WHERE discordid =?",(senderID, ))
+                                lastServer = shopCur.fetchone()
+                                if lastServer == None:
+                                    print("No last server found, order canceled")
+                                    msg = "No last server found, order canceled. Please try again once your are online."
+                                else:
+                                    lastServer = lastServer[0]
+                                    now = datetime.now()
+                                    shopCur.execute("SELECT ID FROM {server}_vault_rentals WHERE rentedUntil < ?".format(server=lastServer),(now, ))
+                                    availableVaults = shopCur.fetchall()
+                                    if availableVaults == None or len(availableVaults) == 0:
+                                        print("No available vaults found, order canceled")
+                                        msg = "No available vaults found, order canceled. Please try again once your are online."
+                                    else:
+                                        shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, itemType, server, count, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemType, lastServer, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
+                                        shopCon.commit()
+                                        order_placed = True
                             else:
                                 print("couldn't identify item type. Canceling order")
                                 msg = "Couldn't identify item type. Canceling order"
 
 
-                            
-                            #log purchase
-                            status = "Order Placed"
-                            shopCur.execute("INSERT INTO shop_log (item, count, price, player, status, logtimestamp) VALUES (?,?,?,?,?,?)", (itemname, itemcount, itemprice, senderID, status, loadDate))
-                            shopCon.commit()
-                            #remove currency
-                            newBalance = int(senderCurrency) - int(itemprice)
-                            shopCur.execute(f"UPDATE accounts SET walletBalance = ? WHERE discordid =?",(int(newBalance), senderID))
-                            shopCon.commit()
-                            msg = f"Order# {order_number} has been placed. Your new {config.Shop_CurrencyName} balance is {newBalance}. You can refund pending orders with !refund {order_number}"
+                            if order_placed == True:
+                                #log purchase
+                                status = "Order Placed"
+                                shopCur.execute("INSERT INTO shop_log (item, count, price, player, status, logtimestamp) VALUES (?,?,?,?,?,?)", (itemname, itemcount, itemprice, senderID, status, loadDate))
+                                shopCon.commit()
+                                #remove currency
+                                newBalance = int(senderCurrency) - int(itemprice)
+                                shopCur.execute(f"UPDATE accounts SET walletBalance = ? WHERE discordid =?",(int(newBalance), senderID))
+                                shopCon.commit()
+                                msg = f"Order# {order_number} has been placed. Your new {config.Shop_CurrencyName} balance is {newBalance}. You can refund pending orders with !refund {order_number}"
 
                     else:
                         msg = "Insufficient Balance"
-                message = await sourcechannel.send(msg)
-                message_id = message.id
-                discordChannelID = sourcechannel.id
-                #insert message ID for order_num
-                if msg != "Item not found":
-                    shopCur.execute("UPDATE order_processing SET discordMessageID =?, discordChannelID =? WHERE order_number =?", (message_id, discordChannelID, order_number))
-                    shopCon.commit()
-                shopCur.close()
-                shopCon.close()
+            message = await sourcechannel.send(msg)
+            message_id = message.id
+            discordChannelID = sourcechannel.id
+            #insert message ID for order_num
+            if msg != "Item not found":
+                shopCur.execute("UPDATE order_processing SET discordMessageID =?, discordChannelID =? WHERE order_number =?", (message_id, discordChannelID, order_number))
+                shopCon.commit()
+            shopCur.close()
+            shopCon.close()
                 
             
         except Exception as e:
@@ -535,6 +626,113 @@ def discord_bot():
             shopCon.close()
             await asyncio.sleep(1)
 
+    async def refundAll(channelID):
+        try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB Platform: {e}")
+            sys.exit(1)
+
+        dbCur = dbCon.cursor()
+        dbCur.execute("SELECT DISTINCT order_number, in_process, completed, refunded FROM order_processing WHERE completed = False AND in_process = False AND refunded = False")
+        orders = dbCur.fetchall()
+        if orders != None:
+            for order in orders:
+                userIN = order[0]
+                print (userIN)
+                print (type(userIN))
+                await refundOrder(userIN,channelID)
+        dbCon.close()
+
+    async def getUserInfo(author, channelID):
+        try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB Platform: {e}")
+            sys.exit(1)
+
+        dbCur = dbCon.cursor()
+        dbCur.execute("SELECT discordID, conanPlayer, conanUserId, isAdmin, walletBalance, lastPaid, earnRateMultiplier, lastUpdated FROM accounts WHERE discordID =?",(author, ))
+        user = dbCur.fetchone()
+        if user != None:
+            discordID = user[0]
+            conanPlayer = user[1]
+            conanUserId = user[2]
+            isAdmin = user[3]
+            walletBalance = user[4]
+            lastPaid = user[5]
+            earnRateMultiplier = user[6]
+            lastUpdate = user[7]
+
+            embedvar = discord.Embed(title='User Info', color = discord.Color.blue())
+            embedvar.add_field(name="Discord ID:", value=discordID, inline=False)
+            embedvar.add_field(name="Conan Player:", value=conanPlayer, inline=False)
+            embedvar.add_field(name="Conan User ID:", value=conanUserId, inline=False)
+            embedvar.add_field(name="Admin:", value=isAdmin, inline=False)
+            embedvar.add_field(name="Wallet Balance:", value=walletBalance, inline=False)
+            embedvar.add_field(name="Last Paid:", value=lastPaid, inline=False)
+            embedvar.add_field(name="Earn Rate Multiplier:", value=earnRateMultiplier, inline=False)
+            embedvar.add_field(name="Last Seen:", value=lastUpdate, inline=False)
+            channel = client.get_channel(int(channelID))
+            await channel.send(embed=embedvar)
+
+    async def permissionWatcher():
+        while True:
+            #get privledged roles
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+                )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            dbCur = dbCon.cursor()
+            dbCur.execute("SELECT roleValue, roleMultiplier, isAdmin FROM privileged_roles order by ID ASC")
+            privelegedRoles = dbCur.fetchall()
+            if privelegedRoles == None or len(privelegedRoles) == 0:
+                msg = ("No privledged roles found")
+            else:
+                #get members
+                members = client.get_all_members()
+                if members != None:
+                    for member in members:
+                            if member.roles:
+                                matched = 0
+                                for role in member.roles:
+                                    for privRole in privelegedRoles:
+                                        if role.name == privRole[0]:
+                                            multiplier = privRole[1]
+                                            isAdmin = privRole[2]
+                                            matched = 1
+                                            try:
+                                                dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (multiplier, isAdmin, member.name + "#" + member.discriminator))
+                                                dbCon.commit()
+                                            except mariadb.Error as e:
+                                                print(f"Error updating user privlege: {e}")
+                                                sys.exit(1)    
+                                    if matched == 1:
+                                        break
+            await asyncio.sleep(60) #check every minute
+
     def clean_text(rgx_list, text):
         new_text = text
         for rgx_match in rgx_list:
@@ -551,6 +749,8 @@ def discord_bot():
         client.loop.create_task(kill_log_watcher())
         client.loop.create_task(pending_Message_Watcher())
         client.loop.create_task(orderStatusWatcher())
+        client.loop.create_task(permissionWatcher())
+        client.loop.create_task(updateShopList())
 
     @client.event
     async def on_message(message):
@@ -592,7 +792,7 @@ def discord_bot():
                 dbCon.commit()
             except Exception as e:
                 if "Duplicate" in str(e):
-                    print("found duplicate updating registration code")
+                    #print("found duplicate updating registration code")
                     dbCur.execute("UPDATE registration_codes SET registrationcode = ? WHERE discordID = ?",
                                     (code, discordID))
                     dbCon.commit()
@@ -605,8 +805,8 @@ def discord_bot():
         if message.content == '!coin' or message.content == '!coins' or message.content == '!currency' or message.content == '!balance':
             discordID = message.author.name + '#' + message.author.discriminator
             discordObjID = message.author.id
-            print(discordID)
-            print(discordObjID)
+            #print(discordID)
+            #print(discordObjID)
             try:
                 dbCon = mariadb.connect(
                 user=config.DB_user,
@@ -630,7 +830,7 @@ def discord_bot():
 
             if coin == None:
                 msg = "Couldn't find an account associated with your discord ID. Please !register first."
-                print("Couldn't find discord ID in accounts... not registered?")
+                #print("Couldn't find discord ID in accounts... not registered?")
             else:
                 coin = coin[0] 
                 msg = (f"You have {coin} {config.Shop_CurrencyName}")
@@ -649,7 +849,7 @@ def discord_bot():
             userIN = message.content[8:]
             senderID = message.author.name + "#" + message.author.discriminator
             channelID = message.channel.id
-            await refundOrder(senderID,userIN,channelID)
+            await refundOrder(userIN,channelID)
 
         if message.content.startswith('!gift'):
             senderDiscordID = message.author.name + "#" + message.author.discriminator
@@ -665,8 +865,21 @@ def discord_bot():
                 msg = "Cannot send null value gift."
             else:
                 try:
-                    shopCon = sqlite3.connect(file_path_shop_db)
+                    try:
+                        shopCon = mariadb.connect(
+                        user=config.DB_user,
+                        password=config.DB_pass,
+                        host=config.DB_host,
+                        port=config.DB_port,
+                        database=config.DB_name
 
+                        )
+                    except mariadb.Error as e:
+                        print(f"Error connecting to MariaDB Platform: {e}")
+                        sys.exit(1)
+
+
+                    # Get MariaCursor
                     shopCur = shopCon.cursor()
                     shopCur.execute(f"SELECT walletBalance FROM accounts WHERE discordid =?", (senderDiscordID, ))
                     senderCurrency = shopCur.fetchone()
@@ -679,7 +892,7 @@ def discord_bot():
                             #you have enough
                             for mentions in mentioned:
                                 discordid = mentions.name + "#" + mentions.discriminator
-                                print(f"{senderDiscordID} is gifting {gift} to {discordid}")
+                                #print(f"{senderDiscordID} is gifting {gift} to {discordid}")
                                 
                                 #Get starting balance
                                 shopCur.execute(f"SELECT walletBalance FROM accounts WHERE discordid =?", (discordid, ))
@@ -697,7 +910,7 @@ def discord_bot():
                                     senderCurrency = int(senderCurrency) - int(gift)
                                     shopCur.execute("UPDATE accounts SET walletBalance = ? WHERE discordid =?", (senderCurrency, senderDiscordID))
                                     shopCon.commit()
-                                    msg = (f"{message.author.name} has sent a gift of {gift} {currency} to {discordid}")
+                                    msg = (f"{message.author.name} has sent a gift of {gift} {config.Shop_CurrencyName} to {discordid}")
                                 
                         else:
                             #you broke
@@ -712,5 +925,15 @@ def discord_bot():
                     msg = ("Error in Gifting, Try again later")
                     pass
                 await message.channel.send(msg)
+            
+        if message.content.startswith('!whoami'):
+            #stop order processing
+            author = message.author
+            channelID = message.channel.id
+            await getUserInfo(author, channelID)
+
+        if message.content.startswith('!whosinhere'):
+            #stop order processing
+            channelID = message.channel.id
             
     client.run(config.Discord_API_KEY)

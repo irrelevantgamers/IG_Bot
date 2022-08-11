@@ -33,6 +33,13 @@ global Shop_PayCheck
 global Shop_PayCheck_Interval
 global Shop_CurrencyName
 global Time_Timezone
+global PrivilegedRoles_Admin
+global PrivilegedRoles_Mod
+global PrivilegedRoles_VIP1
+global PrivilegedRoles_VIP2
+global PrivilegedRoles_VIP3
+global PrivilegedRoles_VIP4
+
 config = configparser.ConfigParser()
 config.read("..\\config.ini")
 DB_host = config["MariaDB"]["Host"]
@@ -68,4 +75,10 @@ Shop_StartingCash = config["Shop"]["StartingCash"]
 Shop_PayCheck = config["Shop"]["PayCheck"]
 Shop_PayCheck_Interval = config["Shop"]["PayCheckInterval"]
 Shop_CurrencyName = config["Shop"]["CurrencyName"]
+PrivilegedRoles_Admin = config["PrivilegedRoles"]["Admin"]
+PrivilegedRoles_Moderator = config["PrivilegedRoles"]["Moderator"]
+PrivilegedRoles_VIP1 = config["PrivilegedRoles"]["VIP1"]
+PrivilegedRoles_VIP2 = config["PrivilegedRoles"]["VIP2"]
+PrivilegedRoles_VIP3 = config["PrivilegedRoles"]["VIP3"]
+PrivilegedRoles_VIP4 = config["PrivilegedRoles"]["VIP4"]
 Time_Timezone = int(config["Time"]["Timezone"])

@@ -1,7 +1,7 @@
 import mariadb
 import configparser
 import sys
-
+from datetime import datetime
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
@@ -55,6 +55,7 @@ if __name__ == '__main__':
             lastPaid 			DATETIME DEFAULT '0001-01-01 00:00:00'	COMMENT 'Date and time of when the player last paid',
             steamPlatformId 	CHAR(100)							    COMMENT 'Steam Platform ID',
             earnRateMultiplier 	INT DEFAULT 1 						    COMMENT 'Based on the players subscription level, if they do not have one, DEFAULT to 1', 
+            lastServer 			CHAR(100)							    COMMENT 'Last server the player was on',
             lastUpdated 		DATETIME							    COMMENT 'Last time this record was updated',
             PRIMARY KEY (id)
         );
@@ -65,6 +66,8 @@ if __name__ == '__main__':
             order_number			INT NOT NULL						COMMENT 'FK: Unique identifier for the the specific order the player makes',
             order_value             INT NOT NULL						COMMENT 'The value of the order',
             itemid		 			INT NOT NULL						COMMENT 'FK: Unique identifier for the specific item',
+            itemType                CHAR(100) NOT NULL					COMMENT 'The type of item',
+            server                  CHAR(100)               			COMMENT 'The server the item is being sent to',
             count		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
             purchaser_platformid 	CHAR(100) NOT NULL  	    		COMMENT 'Funcom Platform ID of the player who made the order',
             purchaser_steamid 		CHAR(100) NOT NULL	        		COMMENT 'steamID of the player who made the order',
@@ -84,7 +87,7 @@ if __name__ == '__main__':
         CREATE TABLE IF NOT EXISTS registration_codes(
             ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the registration_codes Table',
             discordID 				CHAR(100)							COMMENT 'Needed to link the players conanUserId to their discordID to allow them to buy items in discord to be sent to their Conan player',
-            discordObjID 			CHAR(100) 							COMMENT 'Discord Object ID of the Discord account who created the code',
+            discordObjID 			CHAR(100) UNIQUE					COMMENT 'Discord Object ID of the Discord account who created the code',
             registrationCode 		CHAR(100) NOT NULL UNIQUE			COMMENT 'A Unique code that is sent to the player to register their discordID with their character',
             status	 				BOOL NOT NULL DEFAULT 0				COMMENT 'Bool to indicate if the code has been used or not. This is used to clean up the table',
             PRIMARY KEY (ID)
@@ -160,6 +163,7 @@ if __name__ == '__main__':
             description             Char(255)                           COMMENT 'Description of the item',
             category                Char(255)                           COMMENT 'Category of the item',
             cooldown                MEDIUMINT DEFAULT 0                 COMMENT 'Cooldown of the item',
+            maxCountPerPurchase     MEDIUMINT DEFAULT 1                 COMMENT 'Max count of the item per purchase',
             PRIMARY KEY (ID)
         );
     """
@@ -182,6 +186,17 @@ if __name__ == '__main__':
             player		 			CHAR(100) NOT NULL					COMMENT 'Player of the order',
             status		 			CHAR(100) NOT NULL					COMMENT 'Order status',
             logTimestamp 			DATETIME NOT NULL					COMMENT 'Timestamp of when the order was processed',
+            PRIMARY KEY (ID)
+        );
+    """
+
+    privileged_roles = """
+        CREATE TABLE IF NOT EXISTS privileged_roles (
+            ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the shop_log Table also serves as order_number',
+            roleName 				CHAR(100) NOT NULL	UNIQUE			COMMENT 'Name of the role',
+            roleValue               CHAR(100) NOT NULL					COMMENT 'Value of the role',
+            roleMultiplier          MEDIUMINT NOT NULL DEFAULT 1        COMMENT 'Multiplier of the role',
+            isAdmin                 BOOL NOT NULL DEFAULT 0             COMMENT 'Is the role an admin role',
             PRIMARY KEY (ID)
         );
     """
@@ -461,7 +476,7 @@ if __name__ == '__main__':
 
     # Add tables to the table list
     tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,server_pendingDiscordMsg,
-                 shop_log, shop_kits, shop_log, server_currentusers, server_historicalusers, server_jailinfo, server_offenders,
+                 shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers, server_jailinfo, server_offenders,
                  server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals,
                  server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
                  server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,
@@ -546,8 +561,55 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
+    
+    try:
+        mariaCur.execute("SELECT * FROM privileged_roles")
+        roles = mariaCur.fetchall()
+        if len(roles) == 0 or roles == None:
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Admin', ?, '10', True)",(config.PrivilegedRoles_Admin,))
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Moderator', ?, '5', True)",(config.PrivilegedRoles_Moderator,))
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP4', ?, '5', False)",(config.PrivilegedRoles_VIP4,))
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP3', ?, '4', False)",(config.PrivilegedRoles_VIP3,))
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP2', ?, '3', False)",(config.PrivilegedRoles_VIP2,))
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '2', False)",(config.PrivilegedRoles_VIP1,))
+        mariaCon.commit()
+    except mariadb.Error as e:
+        if "Duplicate entry" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
 
+    #setup demo server buffs
+    try:
+        mariaCur.execute("SELECT * FROM {server}_server_buffs".format(server=config.Server_Name))
+        buffs = mariaCur.fetchall()
+        if len(buffs) == 0 or buffs == None:
+            mariaCur.execute("INSERT INTO {server}_server_buffs (name, active, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')".format(server=config.Server_Name),(datetime.now(), datetime.now()))
+            mariaCon.commit()
+    except mariadb.Error as e:
+        if "Duplicate entry" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
 
+    #setup demo shop items
+    try:
+        mariaCur.execute("SELECT * FROM shop_items")
+        items = mariaCur.fetchall()
+        if len(items) == 0 or items == None:
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Stone', 1, 10001, 1, True, 'single', NULL, 'Stone', 'Materials', 0, 100)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Plant Fiber and Stone Kit', 1, 0, 1, True, 'kit', 1, 'Stone and plant fiber', 'Material Kits', 0, 1)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Double XP', 1, 0, 1, True, 'serverBuff', NULL, 'Double XP for your last known server', 'Server Buffs', 30, 1)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, count, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Vault Rental/Renewal', 1, 0, 1, True, 'vault', NULL, 'Clan vault for your last known server', 'Vaults', 30, 1)")
 
+            #add kits
+            mariaCur.execute("INSERT INTO shop_kits (kitId, Name, itemId, count) VALUES (1, 'Stone', 10001, 10)")
+            mariaCur.execute("INSERT INTO shop_kits (kitId, Name, itemId, count) VALUES (1, 'Plant Fiber', 12001, 10)")
+            mariaCon.commit()
+    except mariadb.Error as e:
+        if "Duplicate entry" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
 
     close_mariaDB()
