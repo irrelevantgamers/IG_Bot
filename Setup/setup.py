@@ -67,8 +67,8 @@ if __name__ == '__main__':
             order_value             INT NOT NULL						COMMENT 'The value of the order',
             itemid		 			INT NOT NULL						COMMENT 'FK: Unique identifier for the specific item',
             itemType                CHAR(100) NOT NULL					COMMENT 'The type of item',
-            server                  CHAR(100)               			COMMENT 'The server the item is being sent to',
-            itemcount		 			INT NOT NULL						COMMENT 'How many of the item that will be delivered to the player',
+            serverName              CHAR(100)               			COMMENT 'The server the item is being sent to',
+            itemCount		 		INT NOT NULL    					COMMENT 'How many of the item that will be delivered to the player',
             purchaser_platformid 	CHAR(100) NOT NULL  	    		COMMENT 'Funcom Platform ID of the player who made the order',
             purchaser_steamid 		CHAR(100) NOT NULL	        		COMMENT 'steamID of the player who made the order',
             in_process	 			BOOL NOT NULL						COMMENT 'Boolean to indicate if the order is in process',
@@ -89,7 +89,7 @@ if __name__ == '__main__':
             discordID 				CHAR(100)							COMMENT 'Needed to link the players conanUserId to their discordID to allow them to buy items in discord to be sent to their Conan player',
             discordObjID 			CHAR(100) UNIQUE					COMMENT 'Discord Object ID of the Discord account who created the code',
             registrationCode 		CHAR(100) NOT NULL UNIQUE			COMMENT 'A Unique code that is sent to the player to register their discordID with their character',
-            status	 				BOOL NOT NULL DEFAULT 0				COMMENT 'Bool to indicate if the code has been used or not. This is used to clean up the table',
+            curStatus 				BOOL NOT NULL DEFAULT 0				COMMENT 'Bool to indicate if the code has been used or not. This is used to clean up the table',
             PRIMARY KEY (ID)
         );
     """
@@ -157,12 +157,12 @@ if __name__ == '__main__':
             itemName 				CHAR(100) NOT NULL UNIQUE			COMMENT 'Name of the item',
             price		 			INT NOT NULL DEFAULT 0				COMMENT 'Price of the item',
             itemId		 			INT NOT NULL        				COMMENT 'In game item ID used for rcon commands',
-            itemcount		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
+            itemCount				INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
             enabled		 			INT NOT NULL DEFAULT 0				COMMENT 'Make the item available to the store',
             itemType 				CHAR(100) NOT NULL      			COMMENT 'Type of the item',
             kitId		 			MEDIUMINT NULL						COMMENT 'FK to the shop_kits table',
             buffId         			MEDIUMINT NULL						COMMENT 'FK to the shop_buffs table',
-            description             Char(255)                           COMMENT 'Description of the item',
+            itemDescription         Char(255)                           COMMENT 'Description of the item',
             category                Char(255)                           COMMENT 'Category of the item',
             cooldown                MEDIUMINT DEFAULT 0                 COMMENT 'Cooldown of the item',
             maxCountPerPurchase     MEDIUMINT DEFAULT 1                 COMMENT 'Max count of the item per purchase',
@@ -175,7 +175,7 @@ if __name__ == '__main__':
             kitId		 			INT NOT NULL			    		COMMENT 'ID of kit this item belongs to',
             kitName 				    CHAR(100) NOT NULL      			COMMENT 'Name of the conan item in the kit',
             itemId		 			INT NOT NULL						COMMENT 'in game item ID used for rcon commands',
-            itemcount		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
+            itemCount		 			INT NOT NULL DEFAULT 1				COMMENT 'How many of the item',
             PRIMARY KEY (ID)
         );
     """
@@ -183,10 +183,10 @@ if __name__ == '__main__':
         CREATE TABLE IF NOT EXISTS shop_log (
             ID						MEDIUMINT NOT NULL AUTO_INCREMENT	COMMENT 'Primary KEY for the shop_log Table also serves as order_number',
             item 					CHAR(100) NOT NULL					COMMENT 'Item which was purchased in the order',
-            itemcount		 			CHAR(100) NOT NULL					COMMENT 'How many of the item',
+            itemCount		 			CHAR(100) NOT NULL					COMMENT 'How many of the item',
             price		 			CHAR(100) NOT NULL					COMMENT 'Price of the item',
             player		 			CHAR(100) NOT NULL					COMMENT 'Player of the order',
-            status		 			CHAR(100) NOT NULL					COMMENT 'Order status',
+            curStatus		 			CHAR(100) NOT NULL					COMMENT 'Order status',
             logTimestamp 			DATETIME NOT NULL					COMMENT 'Timestamp of when the order was processed',
             PRIMARY KEY (ID)
         );
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     server_jailinfo = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_jailinfo (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT   COMMENT 'Primary KEY for the jailinfo Table',
-            name            CHAR(100) NOT NULL                  COMMENT 'Name of the jail cell',
+            cellName        CHAR(100) NOT NULL                  COMMENT 'Name of the jail cell',
             spawnLocation   CHAR(100) NOT NULL                  COMMENT 'Spawn location for the jail cell',
             prisoner        CHAR(100)                           COMMENT 'Playername of the prisoner',
             assignedPlayerPlatformID CHAR(100)                  COMMENT 'Funcom Platform ID of the prisoner',
@@ -289,9 +289,9 @@ if __name__ == '__main__':
     server_buffs = f"""
         CREATE TABLE IF NOT EXISTS server_buffs (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the server_buffs Table',
-            buffname            CHAR(100) NOT NULL COMMENT 'Name of the buff',
-            server         CHAR(100) NOT NULL COMMENT 'Name of the server',
-            active          BOOL NOT NULL COMMENT 'If the buff is active',
+            buffname        CHAR(100) NOT NULL COMMENT 'Name of the buff',
+            serverName      CHAR(100) NOT NULL COMMENT 'Name of the server',
+            isActive          BOOL NOT NULL COMMENT 'If the buff is active',
             activateCommand CHAR(100) NOT NULL COMMENT 'Command to activate the buff',
             deactivateCommand CHAR(100) NOT NULL COMMENT 'Command to deactivate the buff',
             lastActivated   DATETIME NOT NULL COMMENT 'Date and time of when the buff was last activated',
@@ -402,8 +402,8 @@ if __name__ == '__main__':
     server_Arenas = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_Arenas (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the arenas Table',
-            Name            CHAR(100) NOT NULL COMMENT 'Name of the arena',
-            Active          BOOL NOT NULL COMMENT 'If the arena is active',
+            areaName        CHAR(100) NOT NULL COMMENT 'Name of the arena',
+            isActive        BOOL NOT NULL COMMENT 'If the arena is active',
             MinX            MEDIUMINT NOT NULL COMMENT 'Minimum X position of the arena',
             MinY            MEDIUMINT NOT NULL COMMENT 'Minimum Y position of the arena',
             MaxX            MEDIUMINT NOT NULL COMMENT 'Maximum X position of the arena',
@@ -443,12 +443,12 @@ if __name__ == '__main__':
     server_event_details = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_event_details (
             ID              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the event_details Table',
-            Name            CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the event',
+            eventName       CHAR(100) NOT NULL UNIQUE COMMENT 'Name of the event',
             GeneralLocation CHAR(100) NOT NULL COMMENT 'General location of the event',
             BlueTeamLocation CHAR(100) NOT NULL COMMENT 'Blue team location of the event',
             RedTeamLocation CHAR(100) NOT NULL COMMENT 'Red team location of the event',
             SpectateLocation CHAR(100) NOT NULL COMMENT 'Spectate location of the event',
-            Active          BOOL NOT NULL COMMENT 'If the event is active',
+            isActive        BOOL NOT NULL COMMENT 'If the event is active',
             MinX            MEDIUMINT NOT NULL COMMENT 'Minimum X position of the event',
             MinY            MEDIUMINT NOT NULL COMMENT 'Minimum Y position of the event',
             MaxX            MEDIUMINT NOT NULL COMMENT 'Maximum X position of the event',
