@@ -89,7 +89,7 @@ def discord_bot():
                 sys.exit(1)
             dbCur = dbCon.cursor()
             # find complete registrations
-            dbCur.execute("SELECT * FROM registration_codes WHERE status = 1")
+            dbCur.execute("SELECT * FROM registration_codes WHERE curstatus = 1")
             completed = dbCur.fetchall()
             messageSent = 0
             if completed != None:
@@ -270,7 +270,7 @@ def discord_bot():
                     cat = category[0]
                     embedvar = discord.Embed(title=cat)
                     embedvar.set_footer(text="To buy an item go to purchasing and use !buy followed by the item ID. (Optional you can include how many times you want to buy with x# \nExample to buy 1: !buy 1\nExample to buy 1 twice: !buy 1x2 ")
-                    shopCur.execute(f"SELECT id, itemname, price, itemcount, description, category, maxCountPerPurchase FROM shop_items WHERE enabled = True AND category = '{cat}' ORDER BY id ASC")
+                    shopCur.execute(f"SELECT id, itemname, price, itemcount, itemdescription, category, maxCountPerPurchase FROM shop_items WHERE enabled = True AND category = '{cat}' ORDER BY id ASC")
                     shop_items = shopCur.fetchall()
 
 
@@ -397,8 +397,8 @@ def discord_bot():
                                         shopCon.commit()
                             elif itemType == 'serverBuff':
                                     
-                                shopCur.execute("SELECT ID, server FROM server_buffs WHERE id =?".format(servername=lastServer),(buffId, ))
-                                buffs = shopCur.fetchone()[0]
+                                shopCur.execute("SELECT ID, serverName FROM server_buffs WHERE id =?",(buffId, ))
+                                buffs = shopCur.fetchone()
                                 if buffs == None:
                                     msg = "Buff not found, order canceled"
                                 else:
@@ -408,7 +408,7 @@ def discord_bot():
                                         order_value, 
                                         itemid, 
                                         itemType, 
-                                        server, 
+                                        serverName, 
                                         itemcount, 
                                         purchaser_platformid, 
                                         purchaser_steamid, 
@@ -423,7 +423,7 @@ def discord_bot():
                                         itemprice, 
                                         buffId, 
                                         itemType, 
-                                        lastServer, 
+                                        buffs[1], 
                                         itemcount, 
                                         platformid, 
                                         steamid, 
@@ -463,7 +463,7 @@ def discord_bot():
                             if order_placed == True:
                                 #log purchase
                                 status = "Order Placed"
-                                shopCur.execute("INSERT INTO shop_log (item, itemcount, price, player, status, logtimestamp) VALUES (?,?,?,?,?,?)", (itemname, itemcount, itemprice, senderID, status, loadDate))
+                                shopCur.execute("INSERT INTO shop_log (item, itemcount, price, player, curstatus, logtimestamp) VALUES (?,?,?,?,?,?)", (itemname, itemcount, itemprice, senderID, status, loadDate))
                                 shopCon.commit()
                                 #remove currency
                                 newBalance = int(senderCurrency) - int(itemprice)
@@ -785,7 +785,7 @@ def discord_bot():
                     await channel.purge()
 
                     embedvar = discord.Embed(title="Server Buffs",color=discord.Color.green())
-                    dbCur.execute("SELECT id, buffname, active, lastActivated, endTime, lastActivatedBy, deactivateCommand FROM server_buffs WHERE server =?",(serverID, ))
+                    dbCur.execute("SELECT id, buffname, isactive, lastActivated, endTime, lastActivatedBy, deactivateCommand FROM server_buffs WHERE serverName =?",(serverName, ))
                     buffList = dbCur.fetchall()
 
                     for buff in buffList:
@@ -819,7 +819,7 @@ def discord_bot():
                                             response = rcon.execute(f"con 0 {deactivateCommand}")
                                             rcon.close()
                                         rconSuccess = 1
-                                        dbCur.execute("UPDATE server_buffs SET active =False WHERE id =?".format(server=serverName),(buffID,))
+                                        dbCur.execute("UPDATE server_buffs SET isactive =False WHERE id =?".format(server=serverName),(buffID,))
                                         dbCon.commit()
                                     except valve.rcon.RCONAuthenticationError:
                                         print("Authentication Error")
@@ -928,7 +928,7 @@ def discord_bot():
         print('We have logged in as {0.user}'.format(client))
         await client.change_presence(activity=discord.Game(name="Conan Exiles"))
         client.loop.create_task(player_count_refresh())
-        client.loop.create_task(registrationWatcher())
+        #client.loop.create_task(registrationWatcher())
         client.loop.create_task(kill_log_watcher())
         client.loop.create_task(pending_Message_Watcher())
         client.loop.create_task(orderStatusWatcher())
@@ -972,7 +972,7 @@ def discord_bot():
 
             # insert code with associated discord ID
             try:
-                dbCur.execute("INSERT INTO registration_codes (discordID, discordObjID, registrationCode, status) VALUES (?, ?, ?, FALSE)",
+                dbCur.execute("INSERT INTO registration_codes (discordID, discordObjID, registrationCode, curstatus) VALUES (?, ?, ?, FALSE)",
                                 (discordID, discordObjID, code))
                 dbCon.commit()
             except Exception as e:
