@@ -7,9 +7,8 @@ def processOrderLoop():
     import valve.rcon
     import config
 
-    def activateBuff(buffName, server, purchaser):
+    def activateBuff(buffId, server, purchaser):
         success = 0
-        print(f"Activating {buffName} on {server}")
         while success == 0:
             try:
                 mariaCon = mariadb.connect(
@@ -23,7 +22,7 @@ def processOrderLoop():
 
                 mariaCur = mariaCon.cursor()
                 discordID = purchaser
-                mariaCur.execute("SELECT buffname, active, activateCommand, deactivateCommand, lastActivated, endTime FROM {servername}_server_buffs WHERE buffname = ?".format(servername=server),(buffName,))
+                mariaCur.execute("SELECT id, isactive, activateCommand, deactivateCommand, lastActivated, endTime FROM server_buffs WHERE id = ?",(buffId,))
                 buffList = mariaCur.fetchone()
                 Active = buffList[1]
                 ActivateCommand = buffList[2]
@@ -41,7 +40,7 @@ def processOrderLoop():
                 if endTime == None:
                     newEndTime = now + timedelta(minutes=30)
 
-                mariaCur.execute("UPDATE {servername}_server_buffs SET endTime = ?, lastActivated = ?, active =True, lastActivatedBy = ? WHERE buffname = ?".format(servername=server),(newEndTime, now, discordID, buffName))
+                mariaCur.execute("UPDATE server_buffs SET endTime = ?, lastActivated = ?, isactive =True, lastActivatedBy = ? WHERE id = ?",(newEndTime, now, discordID, buffId))
                 mariaCon.commit()
 
                 #get server rcon
@@ -113,7 +112,7 @@ def processOrderLoop():
                 shopCon.commit()
 
                 #Get all items associated with order number
-                shopCur.execute("SELECT id, order_number, itemid, itemType, itemcount, purchaser_platformid, purchaser_steamid, order_date FROM order_processing WHERE order_number =?",(orderNumber, ))
+                shopCur.execute("SELECT id, order_number, itemid, itemType, itemcount, purchaser_platformid, purchaser_steamid, order_date, serverName FROM order_processing WHERE order_number =?",(orderNumber, ))
                 orderedItems = shopCur.fetchall()
                 if orderedItems != None:
                     userIsOffline = 0
@@ -125,23 +124,16 @@ def processOrderLoop():
                         itemType = item[3]
                         itemcount = item[4]
                         platformid =item[5]
+                        serverName = item[8]
                         print(f"Processing {order_number}: Current order_processing_id {order_id}: Item ID {itemid}")
                         if itemType == "serverBuff":
                             print("Item is a server buff")
                             
-                            #get server name
-                            shopCur.execute("SELECT lastServer, discordid FROM accounts WHERE conanPlatformID =?",(platformid, ))
+                            #get buyer discord id
+                            shopCur.execute("SELECT discordid FROM accounts WHERE conanPlatformID =?",(platformid, ))
                             info = shopCur.fetchone()
-                            server = info[0]
-                            purchaser = info[1]
-                            print(server)
-                            print(purchaser)
-                            #get buff name
-                            shopCur.execute("SELECT buffname FROM {servername}_server_buffs WHERE id =?".format(servername=server),(itemid, ))
-                            buffName = shopCur.fetchone()[0]
-                            print(buffName)
-                            print(f'activating buff {buffName} on {server}')
-                            rconSuccess = activateBuff(buffName, server, purchaser)
+                            purchaser = info[0]
+                            rconSuccess = activateBuff(itemid, serverName, purchaser)
                             #mark order as completed
                             
                         elif itemType == "vault":
@@ -244,6 +236,13 @@ def processOrderLoop():
                             shopCon.commit()
                     #set user is offline back to 0
                     userIsOffline = 0
+                    #check if order is complete
+                    shopCur.execute("SELECT completed FROM order_processing WHERE order_number =?",(order_number, ))
+                    orderComplete = shopCur.fetchone()[0]
+                    if orderComplete == True:
+                        #update shop_log
+                        shopCur.execute("UPDATE shop_log SET curstatus ='Complete' WHERE id =?",(order_number,))
+                        shopCon.commit()
 
         except Exception as e:
             print(f"exception: {e}")

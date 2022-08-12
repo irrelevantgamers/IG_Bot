@@ -56,6 +56,7 @@ if __name__ == '__main__':
             steamPlatformId 	CHAR(100)							    COMMENT 'Steam Platform ID',
             earnRateMultiplier 	INT DEFAULT 1 						    COMMENT 'Based on the players subscription level, if they do not have one, DEFAULT to 1', 
             lastServer 			CHAR(100)							    COMMENT 'Last server the player was on',
+            firstSeen 			DATETIME DEFAULT '0001-01-01 00:00:00'	COMMENT 'Date and time of when the player first joined the server',
             lastUpdated 		DATETIME							    COMMENT 'Last time this record was updated',
             PRIMARY KEY (id)
         );
@@ -592,10 +593,10 @@ if __name__ == '__main__':
         buffs = mariaCur.fetchall()
         if len(buffs) == 0 or buffs == None:
             print("Inserting demo server buffs...")
-            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
-            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double Harvest', False, ?, 'setserversetting harvestamountmultiplier 6.0', 'setserversetting harvestamountmultiplier 3.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))  
-            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Thrall Conversion', False, ?, 'setserversetting ThrallConversionMultiplier 0.25', 'setserversetting ThrallConversionMultiplier 0.5', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
-            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Crafting Speeds', False, ?, 'setserversetting ItemConvertionMultiplier 0.1', 'setserversetting ItemConvertionMultiplier 0.3', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double Harvest', False, ?, 'setserversetting harvestamountmultiplier 6.0', 'setserversetting harvestamountmultiplier 3.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))  
+            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Thrall Conversion', False, ?, 'setserversetting ThrallConversionMultiplier 0.25', 'setserversetting ThrallConversionMultiplier 0.5', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Crafting Speeds', False, ?, 'setserversetting ItemConvertionMultiplier 0.1', 'setserversetting ItemConvertionMultiplier 0.3', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):

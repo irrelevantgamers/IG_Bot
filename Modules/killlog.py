@@ -128,8 +128,6 @@ def kill_stream():
                                                             (victim,))
                     victimLevel = victimLevel.fetchone()
                     victimLevel = victimLevel[0]
-                    print(f"Victim Level: {victimLevel}")
-                    print(f"Player Level: {playerLevel}")
 
                     # get account id and platformid from the playerid
                     # Killers PlatformID
@@ -138,13 +136,11 @@ def kill_stream():
                             "SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
                             (playerID,))
                         PlayerPlatformID = exiled_gamedb_cur.fetchone()
-                        print(PlayerPlatformID)
                         # victims PlatformID
                         exiled_gamedb_cur.execute(
                             "SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
                             (victimID,))
                         VictimPlatformID = exiled_gamedb_cur.fetchone()
-                        print(VictimPlatformID)
                     except Exception:
                         print("Failed to process platform ids")
                         pass
@@ -201,10 +197,8 @@ def kill_stream():
                     bountyKill = False
                     wanted_paid_amount = 0
                     bounty_paid_amount = 0
-                    if sameClan:
-                        print("skipping kill streak count, same clan")
-                    else:
-                        print("checking kill streaks")
+                    if not sameClan:
+                        #print("checking kill streaks")
                         matchFound = 0
                         dbCur.execute(
                             "SELECT id, platformid, player, killstreak, highestkillstreak, wantedLevel, bounty FROM {servername}_wanted_players".format(
@@ -212,7 +206,7 @@ def kill_stream():
                         wanted = dbCur.fetchall()
                         rowcount = len(wanted)
                         if rowcount != 0:
-                            print("existing Wanted players found")
+                            #print("existing Wanted players found")
                             for result in wanted:
                                 playerid = result[0]
                                 conanplatformid = result[1]
@@ -305,14 +299,14 @@ def kill_stream():
                                         dbCon.commit()
                                         matchFound = 1
                             if matchFound == 0:
-                                print("no existing wanted players found")
+                                #print("no existing wanted players found")
                                 dbCur.execute(
                                     "INSERT INTO {servername}_wanted_players (platformid, player, killstreak, highestkillstreak, wantedlevel, bounty, X, Y) VALUES (?,?,'1','1','0','0',?,?)".format(
                                         servername=serverid),
                                     (PlayerPlatformID[0], player, KillLocationX, KillLocationY))
                                 dbCon.commit()
                         else:
-                            print("no existing wanted players found")
+                            #print("no existing wanted players found")
                             dbCur.execute(
                                 "INSERT INTO {servername}_wanted_players (platformid, player, killstreak, highestkillstreak, wantedlevel, bounty, X, Y) VALUES (?,?,'1','1','0','0',?,?)".format(
                                     servername=serverid), (PlayerPlatformID[0], player, KillLocationX, KillLocationY))

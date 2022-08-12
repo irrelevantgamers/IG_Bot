@@ -138,7 +138,7 @@ def syncPlayers(serverid):
                 syncCur.execute(f"SELECT * FROM accounts WHERE conanplatformid =?", (platformid, ))
                 result = syncCur.fetchone()
                 if result == None:
-                    syncCur.execute(f"INSERT INTO accounts (conanplayer, conanuserid, conanplatformid, steamplatformid, walletbalance, lastupdated) VALUES (?, ?, ?, ?, ?, ?)", (player, userid, platformid, steamPlatformId, config.Shop_StartingCash, loadDate))
+                    syncCur.execute(f"INSERT INTO accounts (conanplayer, conanuserid, conanplatformid, steamplatformid, walletbalance, lastupdated, firstseen) VALUES (?, ?, ?, ?, ?, ?, ?)", (player, userid, platformid, steamPlatformId, config.Shop_StartingCash, loadDate, loadDate))
                     syncCon.commit()
                 #update last seen server for user
                 syncCur.execute(f"UPDATE accounts SET lastServer =? WHERE conanplatformid =?", (serverName, platformid))

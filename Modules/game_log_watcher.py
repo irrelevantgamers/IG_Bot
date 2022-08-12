@@ -108,7 +108,7 @@ def game_log_watcher():
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         dbCur = dbCon.cursor()
-        dbCur.execute("SELECT discordID, discordObjID, registrationcode FROM registration_codes WHERE status = FALSE")
+        dbCur.execute("SELECT discordID, discordObjID, registrationcode FROM registration_codes WHERE curstatus = FALSE")
         results = dbCur.fetchall()
         for row in results:
             discordID = row[0]
@@ -126,16 +126,16 @@ def game_log_watcher():
                     #cursor.execute(f"SELECT id FROM characters WHERE char_name ='{log_character[0]}'")
                     cursor.execute(f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =?", (log_character[0], ))
                     result_id = cursor.fetchone()
-                    print(f"Character-ID: {result_id[0]}")
-                    print(f"Character-Player-ID: {result_id[1]}")
-                    print(f"Character-Name: {result_id[2]}")
-                    print(f"Platform-ID: {result_id[3]}")
+                    #print(f"Character-ID: {result_id[0]}")
+                    #print(f"Character-Player-ID: {result_id[1]}")
+                    #print(f"Character-Name: {result_id[2]}")
+                    #print(f"Platform-ID: {result_id[3]}")
                     
                     platformid = result_id[3]
 
                     cursor.close()
                     connection.close()
-                    print(f"Setting discord ID to {discordID} for {platformid}")
+                    print(f"Setting discord ID to {discordID} for {platformid} - {result_id[2]}")
                     dbCur.execute("UPDATE accounts SET discordid = ? WHERE conanplatformid = ?", (discordID, platformid))
                     dbCon.commit()
 
