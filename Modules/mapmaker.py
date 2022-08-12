@@ -43,7 +43,6 @@ def create_conan_maps():
             for enabledServer in enabledServers:
                 serverName = enabledServer[1]
                 os.chdir("..\\WebPages")
-                print(os.getcwd())
                 base_map = folium.Map(crs='Simple', min_zoom=1, max_zoom=3, zoom_start=2, tiles=None, location=[0,0], control_scale=True)
                 conan_overlay = folium.raster_layers.ImageOverlay(name='map', image='images\\conan.jpg', bounds=[[-370, -342], [445, 475]], zindex=1)
                 conan_overlay.add_to(base_map)
@@ -51,14 +50,13 @@ def create_conan_maps():
                 base_map.fit_bounds(bounds=[[-370, -342], [445, 475]])
 
                 try:
-                    print("making map")
                     wantedPlayers = folium.plugins.FeatureGroupSubGroup(mainFeatureGroup, name='Wanted Players')
                     dbCur.execute("SELECT player, x, y, killstreak, wantedlevel, bounty FROM {servername}_wanted_players".format(servername=serverName))
                     users = dbCur.fetchall()
                     rowcount = len(users)
                     if rowcount != 0:
                         for user in users:
-                            player = user[0]
+                            player = str(user[0].encode('utf-8', errors='ignore'))[2:-1]
                             playerX = user[1]
                             playerY = user[2]
                             killstreak = user[3]
@@ -79,7 +77,7 @@ def create_conan_maps():
                     rowcount = len(pvps)
                     if rowcount != 0:
                         for pvp in pvps:
-                            name = pvp[1]
+                            name = str(pvp[1].encode('utf-8', errors='ignore'))[2:-1]
                             x = pvp[2]
                             y = pvp[3]
                             datetime = pvp[4]
