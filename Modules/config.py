@@ -12,6 +12,7 @@ global Server_RCON_Pass
 global Server_SteamQuery_Port
 global Server_Game_DB_Location
 global Server_Game_Log_Location
+global Server_Map_Url
 global Discord_ServerLog_Channel
 global Discord_Killlog_Channel
 global Discord_Solo_LeaderBoardAll_Channel
@@ -39,6 +40,7 @@ global PrivilegedRoles_VIP1
 global PrivilegedRoles_VIP2
 global PrivilegedRoles_VIP3
 global PrivilegedRoles_VIP4
+global PrivilegedRoles_StandardUser
 
 config = configparser.ConfigParser()
 config.read("..\\config.ini")
@@ -54,6 +56,7 @@ Server_RCON_Pass = config["Server"]["RCON_Pass"]
 Server_SteamQuery_Port = int(config["Server"]["SteamQuery_Port"])
 Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
+Server_Map_Url = config["Server"]["Map_Url"]
 Discord_ServerLog_Channel = config["Discord"]["ServerLog_Channel"]
 Discord_Killlog_Channel = int(config["Discord"]["Killlog_Channel"])
 Discord_Solo_LeaderBoardAll_Channel = config["Discord"]["Solo_LeaderBoardAll_Channel"]
@@ -81,4 +84,5 @@ PrivilegedRoles_VIP1 = config["PrivilegedRoles"]["VIP1"]
 PrivilegedRoles_VIP2 = config["PrivilegedRoles"]["VIP2"]
 PrivilegedRoles_VIP3 = config["PrivilegedRoles"]["VIP3"]
 PrivilegedRoles_VIP4 = config["PrivilegedRoles"]["VIP4"]
+PrivilegedRoles_StandardUser = config["PrivilegedRoles"]["StandardUser"]
 Time_Timezone = int(config["Time"]["Timezone"])

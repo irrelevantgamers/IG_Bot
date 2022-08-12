@@ -151,7 +151,7 @@ def kill_stream():
 
                     ##get protected areas
                     try:
-                        dbCur.execute("SELECT name, minX, minY, maxX, maxY FROM {servername}_protected_areas".format(
+                        dbCur.execute("SELECT paname, minX, minY, maxX, maxY FROM {servername}_protected_areas".format(
                             servername=serverid))
                         protectedareas = dbCur.fetchall()
                         if len(protectedareas) != 0 and protectedareas[0] != None:
@@ -321,7 +321,7 @@ def kill_stream():
                     now = datetime.now()
                     pvpmarkername = f"{player} vs {victim}"
                     dbCur.execute(
-                        "INSERT INTO {servername}_recent_pvp (name, x, y, loaddate) VALUES (?,?,?,?)".format(
+                        "INSERT INTO {servername}_recent_pvp (pvpname, x, y, loaddate) VALUES (?,?,?,?)".format(
                             servername=serverid), (pvpmarkername, KillLocationX, KillLocationY, now))
                     dbCon.commit()
 

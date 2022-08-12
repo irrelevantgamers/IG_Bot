@@ -122,6 +122,7 @@ if __name__ == '__main__':
             ServerBuffs_Channel            			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the server buffs to',
             VaultRental_Channel           			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the vault rental to',
             Event_Channel           				CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the events to',
+            Map_Url                                 CHAR(255) NOT NULL 					COMMENT 'URL to the public map page',
             lastCheckIn                             DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the server last checked in',
             lastUserSync                            DATETIME DEFAULT 0              	COMMENT 'Date and time of when the server last synced users',
             PRIMARY KEY (ID)
@@ -160,6 +161,7 @@ if __name__ == '__main__':
             enabled		 			INT NOT NULL DEFAULT 0				COMMENT 'Make the item available to the store',
             itemType 				CHAR(100) NOT NULL      			COMMENT 'Type of the item',
             kitId		 			MEDIUMINT NULL						COMMENT 'FK to the shop_kits table',
+            buffId         			MEDIUMINT NULL						COMMENT 'FK to the shop_buffs table',
             description             Char(255)                           COMMENT 'Description of the item',
             category                Char(255)                           COMMENT 'Category of the item',
             cooldown                MEDIUMINT DEFAULT 0                 COMMENT 'Cooldown of the item',
@@ -250,7 +252,7 @@ if __name__ == '__main__':
     server_protected_areas = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_protected_areas (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the protected_areas Table',
-            name            CHAR(100) NOT NULL COMMENT 'Name of the protected area',
+            paname            CHAR(100) NOT NULL COMMENT 'Name of the protected area',
             minX            CHAR(100) NOT NULL COMMENT 'Minimum X position of the protected area',
             minY            CHAR(100) NOT NULL COMMENT 'Minimum Y position of the protected area',
             maxX            CHAR(100) NOT NULL COMMENT 'Maximum X position of the protected area',
@@ -262,7 +264,7 @@ if __name__ == '__main__':
     server_recent_pvp = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_recent_pvp (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the recent_pvp Table',
-            name            CHAR(100) NOT NULL COMMENT 'Name of the pvp location',
+            pvpname            CHAR(100) NOT NULL COMMENT 'Name of the pvp location',
             x               CHAR(100) NOT NULL COMMENT 'X position of the pvp location',
             y               CHAR(100) NOT NULL COMMENT 'Y position of the pvp location',
             loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the pvp location was loaded',
@@ -284,10 +286,11 @@ if __name__ == '__main__':
             );
     """
 
-    server_server_buffs = f"""
-        CREATE TABLE IF NOT EXISTS {config.Server_Name}_server_buffs (
+    server_buffs = f"""
+        CREATE TABLE IF NOT EXISTS server_buffs (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the server_buffs Table',
             buffname            CHAR(100) NOT NULL COMMENT 'Name of the buff',
+            server         CHAR(100) NOT NULL COMMENT 'Name of the server',
             active          BOOL NOT NULL COMMENT 'If the buff is active',
             activateCommand CHAR(100) NOT NULL COMMENT 'Command to activate the buff',
             deactivateCommand CHAR(100) NOT NULL COMMENT 'Command to deactivate the buff',
@@ -477,7 +480,7 @@ if __name__ == '__main__':
     # Add tables to the table list
     tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,server_pendingDiscordMsg,
                  shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers, server_jailinfo, server_offenders,
-                 server_protected_areas, server_recent_pvp, server_bans, server_server_buffs, server_vault_rentals,
+                 server_protected_areas, server_recent_pvp, server_bans, server_buffs, server_vault_rentals,
                  server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
                  server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,
                  server_activeTeleports, server_event_details, server_insults, server_teleportLog]
@@ -523,8 +526,9 @@ if __name__ == '__main__':
                     Items_for_Sale_Channel,            
                     ServerBuffs_Channel,            	
                     VaultRental_Channel,
-                    Event_Channel
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                    Event_Channel,
+                    Map_URL
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 
 
@@ -553,7 +557,8 @@ if __name__ == '__main__':
                 config.Discord_Items_for_Sale_Channel,
                 config.Discord_ServerBuffs_Channel,
                 config.Discord_VaultRental_Channel,
-                config.Discord_Event_Channel))
+                config.Discord_Event_Channel,
+                config.Server_Map_Url))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -572,6 +577,7 @@ if __name__ == '__main__':
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP3', ?, '4', False)",(config.PrivilegedRoles_VIP3,))
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP2', ?, '3', False)",(config.PrivilegedRoles_VIP2,))
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '2', False)",(config.PrivilegedRoles_VIP1,))
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '1', False)",(config.PrivilegedRoles_StandardUser,))
         mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -581,10 +587,10 @@ if __name__ == '__main__':
 
     #setup demo server buffs
     try:
-        mariaCur.execute("SELECT * FROM {server}_server_buffs".format(server=config.Server_Name))
+        mariaCur.execute("SELECT * FROM server_buffs".format(server=config.Server_Name))
         buffs = mariaCur.fetchall()
         if len(buffs) == 0 or buffs == None:
-            mariaCur.execute("INSERT INTO {server}_server_buffs (buffname, active, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')".format(server=config.Server_Name),(datetime.now(), datetime.now()))
+            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -599,7 +605,7 @@ if __name__ == '__main__':
         if len(items) == 0 or items == None:
             mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Stone', 1, 10001, 1, True, 'single', NULL, 'Stone', 'Materials', 0, 100)")
             mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Plant Fiber and Stone Kit', 1, 0, 1, True, 'kit', 1, 'Stone and plant fiber', 'Material Kits', 0, 1)")
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Double XP', 1, 1, 1, True, 'serverBuff', NULL, 'Double XP for your last known server', 'Server Buffs', 30, 1)")
+            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, buffId, description, category, cooldown, maxCountPerPurchase) VALUES ('Double XP', 1, 1, 1, True, 'serverBuff', 1, 'Double XP for your last known server', 'Server Buffs', 30, 1)")
             mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Vault Rental/Renewal', 1, 0, 1, True, 'vault', NULL, 'Clan vault for your last known server', 'Vaults', 30, 1)")
 
             #add kits

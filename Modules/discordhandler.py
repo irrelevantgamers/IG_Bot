@@ -319,7 +319,7 @@ def discord_bot():
                 itemNo = userINsplit[0]
                 itemQty = 1
 
-            shopCur.execute(f"SELECT itemname, price, itemid, itemcount, itemType, kitID, cooldown, maxCountPerPurchase FROM shop_items WHERE id =? AND enabled =1", (itemNo, ))
+            shopCur.execute(f"SELECT itemname, price, itemid, itemcount, itemType, kitID, cooldown, maxCountPerPurchase, buffId FROM shop_items WHERE id =? AND enabled =1", (itemNo, ))
             itemDetails = shopCur.fetchone()
             if itemDetails == None:
                 print("Item not found")
@@ -334,6 +334,7 @@ def discord_bot():
                 itemType = itemDetails[4]
                 itemKitID = itemDetails[5]
                 cooldown = int(itemDetails[6]) * int(itemQty)
+                buffId = int(itemDetails[8])
                 #Assign an order number
                 shopCur.execute("SELECT ID FROM shop_log ORDER BY ID DESC")
                 orderNums = shopCur.fetchone()
@@ -397,68 +398,46 @@ def discord_bot():
                                         shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, itemType, itemcount, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemType, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
                                         shopCon.commit()
                             elif itemType == 'serverBuff':
-                                #get vault list for users last seen server
-                                shopCur.execute("SELECT lastServer FROM Accounts WHERE discordid =?",(senderID, ))
-                                lastServer = shopCur.fetchone()
-                                if lastServer == None:
-                                    print("No last server found, order canceled")
-                                    msg = "No last server found, order canceled. Please try again once your are online."
+                                    
+                                shopCur.execute("SELECT ID, server FROM server_buffs WHERE id =?".format(servername=lastServer),(buffId, ))
+                                buffs = shopCur.fetchone()[0]
+                                if buffs == None:
+                                    msg = "Buff not found, order canceled"
                                 else:
-                                    lastServer = lastServer[0]
-                                    shopCur.execute("SELECT ID FROM {servername}_server_buffs WHERE buffname =?".format(servername=lastServer),(itemname, ))
-                                    buffid = shopCur.fetchone()[0]
-                                    if buffid == None:
-                                        msg = "Buff not found, order canceled"
-                                    else:
-                                        print("adding buff order")
-                                        print(
-                                            order_number, 
-                                            int(itemprice), 
-                                            itemid, 
-                                            itemType, 
-                                            lastServer, 
-                                            itemcount, 
-                                            platformid, 
-                                            steamid, 
-                                            False, 
-                                            False, 
-                                            False, 
-                                            order_date, 
-                                            last_attempt)
-                                        insertquery = """INSERT INTO order_processing 
-                                        (
-                                            order_number, 
-                                            order_value, 
-                                            itemid, 
-                                            itemType, 
-                                            server, 
-                                            itemcount, 
-                                            purchaser_platformid, 
-                                            purchaser_steamid, 
-                                            in_process, 
-                                            completed, 
-                                            refunded, 
-                                            order_date, 
-                                            last_attempt
-                                            ) values (?,?,?,?,?,?,?,?,?,?,?,?,?)"""
-                                        shopCur.execute(insertquery,(
-                                            order_number, 
-                                            itemprice, 
-                                            itemid, 
-                                            itemType, 
-                                            lastServer, 
-                                            itemcount, 
-                                            platformid, 
-                                            steamid, 
-                                            False, 
-                                            False, 
-                                            False, 
-                                            order_date, 
-                                            last_attempt))
-                                        
-                                        shopCon.commit()
-                                        order_placed = True
-                                        print("order placed")
+                                    insertquery = """INSERT INTO order_processing 
+                                    (
+                                        order_number, 
+                                        order_value, 
+                                        itemid, 
+                                        itemType, 
+                                        server, 
+                                        itemcount, 
+                                        purchaser_platformid, 
+                                        purchaser_steamid, 
+                                        in_process, 
+                                        completed, 
+                                        refunded, 
+                                        order_date, 
+                                        last_attempt
+                                        ) values (?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                                    shopCur.execute(insertquery,(
+                                        order_number, 
+                                        itemprice, 
+                                        buffId, 
+                                        itemType, 
+                                        lastServer, 
+                                        itemcount, 
+                                        platformid, 
+                                        steamid, 
+                                        False, 
+                                        False, 
+                                        False, 
+                                        order_date, 
+                                        last_attempt))
+                                    
+                                    shopCon.commit()
+                                    order_placed = True
+                                    print("order placed")
                             elif itemType == 'vault':
                                 #get vault list for users last seen server
                                 shopCur.execute("SELECT lastServer FROM Accounts WHERE discordid =?",(senderID, ))
@@ -810,16 +789,17 @@ def discord_bot():
                     await channel.purge()
 
                     embedvar = discord.Embed(title="Server Buffs",color=discord.Color.green())
-                    dbCur.execute("SELECT buffname, active, lastActivated, endTime, lastActivatedBy, deactivateCommand FROM {server}_server_buffs".format(server=serverName))
+                    dbCur.execute("SELECT id, buffname, active, lastActivated, endTime, lastActivatedBy, deactivateCommand FROM server_buffs WHERE server =?",(serverID, ))
                     buffList = dbCur.fetchall()
 
                     for buff in buffList:
-                        buffname = buff[0]
-                        active = buff[1]
-                        lastActivated = buff[2]
-                        endTime = buff[3]
-                        lastActivatedBy = buff[4]
-                        deactivateCommand = buff[5]
+                        buffID = buff[0]
+                        buffname = buff[1]
+                        active = buff[2]
+                        lastActivated = buff[3]
+                        endTime = buff[4]
+                        lastActivatedBy = buff[5]
+                        deactivateCommand = buff[6]
                     
                         #check if buff expired
                         if endTime != None:
@@ -843,7 +823,7 @@ def discord_bot():
                                             response = rcon.execute(f"con 0 {deactivateCommand}")
                                             rcon.close()
                                         rconSuccess = 1
-                                        dbCur.execute("UPDATE {server}_server_buffs SET active =False WHERE name =?".format(server=serverName),(buffname,))
+                                        dbCur.execute("UPDATE server_buffs SET active =False WHERE id =?".format(server=serverName),(buffID,))
                                         dbCon.commit()
                                     except valve.rcon.RCONAuthenticationError:
                                         print("Authentication Error")
@@ -862,11 +842,84 @@ def discord_bot():
                         embedvar.add_field(name="Server: {}\tBuff: {}".format(serverName, buffname), value="Status: **{}**\nLast Activated {} by **{}**\nEndTime: {}".format(status, lastActivated, lastActivatedBy, endTime),inline=False)
                     dbCur.close()          
                     dbCon.close()
-                    footer = f"Current server time is: {now}."
+                    footer = f"Current server time is: {datetime.now()}."
                     embedvar.set_footer(text=footer)
                     await channel.send(embed=embedvar)
 
             await asyncio.sleep(60)
+
+    async def updateWantedList():
+        while True:
+            print("Updating wanted list for discord")
+            #This function punishes offenders
+            
+            
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            dbCur = dbCon.cursor()
+            dbCur = dbCon.cursor()
+            dbCur.execute("Select id, servername, wanted_Channel, map_url FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    serverurl = server[3]
+                    embedvar = discord.Embed(title='Wanted Players',color = discord.Color.blue(),url="{servermapurl}".format(servermapurl=serverurl))
+                    dbCur.execute("SELECT player, killstreak, highestKillStreak, wantedLevel, bounty FROM {server}_wanted_players WHERE wantedLevel > 0".format(server=server[1]))
+                    wantedList = dbCur.fetchall()
+                    if wantedList != None:
+                        for wanted in wantedList:
+                            conanplayer = wanted[0]
+                            killstreak = wanted[1]
+                            highestKillStreak = wanted[2]
+                            wantedLevel = wanted[3]
+                            bounty = wanted[4]
+                            if wantedLevel > 0:
+                                status = "Wanted"
+                            else:
+                                status = "Not Wanted"
+                            embedvar.add_field(name="Player:{} \tStatus: {}".format(conanplayer,status), value="Bounty:{}\nCurrent Kill Streak:{}\nHighest Kill Streak:{}".format(bounty, killstreak, highestKillStreak), inline=False)
+                    else:
+                        embedvar.add_field(name="No currently wanted players", value="check back soon!")
+                    footer = "Current Wanted Players can be tracked at {servermapurl}".format(servermapurl=serverurl)
+                    embedvar.set_footer(text=footer)
+                    await channel.send(embed=embedvar)
+
+                    #kill streaks
+                    dbCur.execute("SELECT player, killstreak, highestKillStreak, wantedLevel, bounty FROM {server}_wanted_players ORDER BY highestKillStreak DESC LIMIT 10".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    embedvar = discord.Embed(title='Kill Streaks',color = discord.Color.gold(),url="{servermapurl}".format(servermapurl=serverurl))
+                    for result in result:
+                        name = result[0]
+                        killstreak = result[1]
+                        highestKillStreak = result[2]
+                        wantedLevel = result[3]
+                        bounty = result[4]
+                        if wantedLevel > 0:
+                            status = "WANTED"
+                        else:
+                            status = "Not Wanted"
+
+                        embedvar.add_field(name="Player:{} \tStatus: {}".format(name,status), value="Bounty:{}\nCurrent Kill Streak:{}\nHighest Kill Streak:{}".format(bounty, killstreak, highestKillStreak), inline=False)
+                
+                    embedvar.set_footer(text=footer)
+                    await channel.send(embed=embedvar)
+                    dbCur.close()
+                    dbCon.close()
+
+            await asyncio.sleep(300)
+
 
     def clean_text(rgx_list, text):
         new_text = text
@@ -887,6 +940,7 @@ def discord_bot():
         client.loop.create_task(permissionWatcher())
         client.loop.create_task(updateShopList())
         client.loop.create_task(buffWatcher())
+        client.loop.create_task(updateWantedList())
 
     @client.event
     async def on_message(message):

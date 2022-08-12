@@ -19,6 +19,7 @@ from usersync import runSync
 from game_log_watcher import game_log_watcher
 from accountpayroll import pay_users
 from orderprocessing import processOrderLoop
+from mapmaker import create_conan_maps
 
 if __name__ == "__main__":
     # Run setup for the bot
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     gameLogWatcherRunning = False
     accountPayrollRunning = False
     orderProcessingRunning = False
-
+    mapMakerProcessRunning = False
     #start modules and loop to check for status   
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10) 
     while True:
@@ -121,6 +122,20 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f'Order Processing error: {e}')
                 orderProcessingRunning = False
+
+            try:
+                if not mapMakerProcessRunning:
+                    mapMakerProcess = executor.submit(create_conan_maps)
+                    mapMakerProcessRunning = True
+                if mapMakerProcess.done():
+                    print(f'Status: Map Maker Process is not running. Restarting...')
+                    mapMakerProcessRunning = False
+                else:
+                    print(f'Status: Map Maker Process is still running')
+                    mapMakerProcessRunning = True
+            except Exception as e:
+                print(f'Map Maker Process error: {e}')
+                mapMakerProcessRunning = False
 
             attempts = 0
             rconSuccess = False
