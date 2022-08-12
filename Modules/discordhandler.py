@@ -270,19 +270,20 @@ def discord_bot():
                     cat = category[0]
                     embedvar = discord.Embed(title=cat)
                     embedvar.set_footer(text="To buy an item go to purchasing and use !buy followed by the item ID. (Optional you can include how many times you want to buy with x# \nExample to buy 1: !buy 1\nExample to buy 1 twice: !buy 1x2 ")
-                    shopCur.execute(f"SELECT * FROM shop_items WHERE enabled = True AND category = '{cat}' ORDER BY id ASC")
+                    shopCur.execute(f"SELECT id, itemname, price, itemcount, description, category, maxCountPerPurchase FROM shop_items WHERE enabled = True AND category = '{cat}' ORDER BY id ASC")
                     shop_items = shopCur.fetchall()
 
 
                     for row in shop_items:
                         itemid = row[0]
-                        name = row[1]
+                        itemname = row[1]
                         price = row[2]
-                        count = row[4]
-                        description = row[8]
-                        category = [9]
+                        itemcount = row[3]
+                        description = row[4]
+                        category = row[5]
+                        maxCountPerPurchase = row[6]
                         
-                        embedvar.add_field(name="ID: {} \tName: {} x {}".format(itemid, count, name), value="Price: {} {}\nDescription: {}".format(price, config.Shop_CurrencyName, description),inline=False)
+                        embedvar.add_field(name="ID: {} \tName: {} x {}".format(itemid, itemcount, itemname), value="Price: {}\nMax per purchase: {}\nDescription: {}".format(price, maxCountPerPurchase, config.Shop_CurrencyName, description),inline=False)
                     await channel.send(embed=embedvar)
 
             except Exception as e:
@@ -308,7 +309,6 @@ def discord_bot():
             except mariadb.Error as e:
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
-
             shopCur = shopCon.cursor()
             #Get the price of the item
             userINsplit = userIN.split("x")
@@ -318,7 +318,6 @@ def discord_bot():
             else:
                 itemNo = userINsplit[0]
                 itemQty = 1
-
             shopCur.execute(f"SELECT itemname, price, itemid, itemcount, itemType, kitID, cooldown, maxCountPerPurchase, buffId FROM shop_items WHERE id =? AND enabled =1", (itemNo, ))
             itemDetails = shopCur.fetchone()
             if itemDetails == None:
@@ -334,7 +333,7 @@ def discord_bot():
                 itemType = itemDetails[4]
                 itemKitID = itemDetails[5]
                 cooldown = int(itemDetails[6]) * int(itemQty)
-                buffId = int(itemDetails[8])
+                buffId = itemDetails[8]
                 #Assign an order number
                 shopCur.execute("SELECT ID FROM shop_log ORDER BY ID DESC")
                 orderNums = shopCur.fetchone()
@@ -342,7 +341,6 @@ def discord_bot():
                     order_number = int(orderNums[0]) + 1
                 else:
                     order_number = 1
-
                 order_date = datetime.now()
                 last_attempt = datetime.min
                 #get the wallet value of the user
@@ -394,7 +392,7 @@ def discord_bot():
                                     order_placed = True
                                     for item in items: 
                                         itemid = item[0]
-                                        itemcount = item[1]
+                                        itemcount = int(item[1]) * int(itemQty)
                                         shopCur.execute("INSERT INTO order_processing (order_number, order_value, itemid, itemType, itemcount, purchaser_platformid, purchaser_steamid, in_process, completed, refunded, order_date, last_attempt) values (?,?,?,?,?,?,?,?,?,?,?,?)",(order_number, itemprice, itemid, itemType, itemcount, platformid, steamid, False, False, False, order_date, last_attempt))
                                         shopCon.commit()
                             elif itemType == 'serverBuff':
@@ -758,7 +756,6 @@ def discord_bot():
 
     async def buffWatcher():
         while True:
-            print("Checking Buff Status")
             #This function punishes offenders
             
             
@@ -783,7 +780,6 @@ def discord_bot():
                     serverID = server[0]
                     serverName = server[1]
                     buff_channel = server[2]
-                    print(buff_channel)
 
                     channel = client.get_channel(int(buff_channel))
                     await channel.purge()
@@ -919,7 +915,6 @@ def discord_bot():
                     dbCon.close()
 
             await asyncio.sleep(300)
-
 
     def clean_text(rgx_list, text):
         new_text = text

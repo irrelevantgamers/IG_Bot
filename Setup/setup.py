@@ -229,30 +229,30 @@ if __name__ == '__main__':
             """
     server_jailinfo = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_jailinfo (
-            id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the jailinfo Table',
-            name            CHAR(100) NOT NULL COMMENT 'Name of the jail cell',
-            spawnLocation   CHAR(100) NOT NULL COMMENT 'Spawn location for the jail cell',
-            prisoner        CHAR(100) NOT NULL COMMENT 'Playername of the prisoner',
-            assignedPlayerPlatformID CHAR(100) NOT NULL COMMENT 'Funcom Platform ID of the prisoner',
-            sentenceTime    datetime NOT NULL COMMENT 'Date and time of when the prisoner was assigned to the jail cell',
-            sentenceLength  MEDIUMINT NOT NULL COMMENT 'Length of the sentence in minutes',
+            id              MEDIUMINT NOT NULL AUTO_INCREMENT   COMMENT 'Primary KEY for the jailinfo Table',
+            name            CHAR(100) NOT NULL                  COMMENT 'Name of the jail cell',
+            spawnLocation   CHAR(100) NOT NULL                  COMMENT 'Spawn location for the jail cell',
+            prisoner        CHAR(100)                           COMMENT 'Playername of the prisoner',
+            assignedPlayerPlatformID CHAR(100)                  COMMENT 'Funcom Platform ID of the prisoner',
+            sentenceTime    datetime                            COMMENT 'Date and time of when the prisoner was assigned to the jail cell',
+            sentenceLength  MEDIUMINT                           COMMENT 'Length of the sentence in minutes',
             PRIMARY KEY (id)
             );
     """
     server_offenders = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_offenders (
-        player          CHAR(100) NOT NULL COMMENT 'Name of the player',
-        platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
-        current_strikes         MEDIUMINT NOT NULL COMMENT 'Number of strikes the player has',
-        last_Strike      DATETIME NOT NULL COMMENT 'Date and time of when the player last got a strike',
-        strike_outs    MEDIUMINT NOT NULL COMMENT 'Number of times the player has been punished'
+        player              CHAR(100) NOT NULL                COMMENT 'Name of the player',
+        platformid          CHAR(100) NOT NULL UNIQUE         COMMENT 'Funcom Platform ID of the player',
+        current_strikes     MEDIUMINT NOT NULL                COMMENT 'Number of strikes the player has',
+        last_Strike         DATETIME NOT NULL                 COMMENT 'Date and time of when the player last got a strike',
+        strike_outs         MEDIUMINT NOT NULL DEFAULT '0'    COMMENT 'Number of times the player has been punished'
         );
         """
 
     server_protected_areas = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_protected_areas (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the protected_areas Table',
-            paname            CHAR(100) NOT NULL COMMENT 'Name of the protected area',
+            paname          CHAR(100) NOT NULL COMMENT 'Name of the protected area',
             minX            CHAR(100) NOT NULL COMMENT 'Minimum X position of the protected area',
             minY            CHAR(100) NOT NULL COMMENT 'Minimum Y position of the protected area',
             maxX            CHAR(100) NOT NULL COMMENT 'Maximum X position of the protected area',
@@ -571,6 +571,7 @@ if __name__ == '__main__':
         mariaCur.execute("SELECT * FROM privileged_roles")
         roles = mariaCur.fetchall()
         if len(roles) == 0 or roles == None:
+            print("Creating privileged roles")
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Admin', ?, '10', True)",(config.PrivilegedRoles_Admin,))
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Moderator', ?, '5', True)",(config.PrivilegedRoles_Moderator,))
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP4', ?, '5', False)",(config.PrivilegedRoles_VIP4,))
@@ -587,10 +588,14 @@ if __name__ == '__main__':
 
     #setup demo server buffs
     try:
-        mariaCur.execute("SELECT * FROM server_buffs".format(server=config.Server_Name))
+        mariaCur.execute("SELECT * FROM server_buffs")
         buffs = mariaCur.fetchall()
         if len(buffs) == 0 or buffs == None:
+            print("Inserting demo server buffs...")
             mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double Harvest', False, ?, 'setserversetting harvestamountmultiplier 6.0', 'setserversetting harvestamountmultiplier 3.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))  
+            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Thrall Conversion', False, ?, 'setserversetting ThrallConversionMultiplier 0.25', 'setserversetting ThrallConversionMultiplier 0.5', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute("INSERT INTO server_buffs (buffname, active, server, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Crafting Speeds', False, ?, 'setserversetting ItemConvertionMultiplier 0.1', 'setserversetting ItemConvertionMultiplier 0.3', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -603,17 +608,55 @@ if __name__ == '__main__':
         mariaCur.execute("SELECT * FROM shop_items")
         items = mariaCur.fetchall()
         if len(items) == 0 or items == None:
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Stone', 1, 10001, 1, True, 'single', NULL, 'Stone', 'Materials', 0, 100)")
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Plant Fiber and Stone Kit', 1, 0, 1, True, 'kit', 1, 'Stone and plant fiber', 'Material Kits', 0, 1)")
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, buffId, description, category, cooldown, maxCountPerPurchase) VALUES ('Double XP', 1, 1, 1, True, 'serverBuff', 1, 'Double XP for your last known server', 'Server Buffs', 30, 1)")
-            mariaCur.execute("INSERT INTO shop_items (itemName, price, itemId, itemcount, enabled, itemType, kitId, description, category, cooldown, maxCountPerPurchase) VALUES ('Vault Rental/Renewal', 1, 0, 1, True, 'vault', NULL, 'Clan vault for your last known server', 'Vaults', 30, 1)")
-
-            #add kits
-            mariaCur.execute("INSERT INTO shop_kits (kitId, kitName, itemId, itemcount) VALUES (1, 'Stone', 10001, 10)")
-            mariaCur.execute("INSERT INTO shop_kits (kitId, kitName, itemId, itemcount) VALUES (1, 'Plant Fiber', 12001, 10)")
-            mariaCon.commit()
+            print("Inserting demo shop items")
+            si = open('..\\Setup\\shop_items.sql', 'r')
+            sqlFile = si.read().replace('{server}', config.Server_Name)
+            si.close()
+            sqlCommands = sqlFile.split(';')
+            for command in sqlCommands:
+                mariaCur.execute(command)
+                mariaCon.commit()
     except mariadb.Error as e:
-        if "Duplicate entry" in str(e):
+        if "empty statement" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
+
+    #setup demo shop kits
+    try:
+        mariaCur.execute("SELECT * FROM shop_kits")
+        items = mariaCur.fetchall()
+        if len(items) == 0 or items == None:
+            print("Inserting demo shop kits")
+            sk = open('..\\Setup\\shop_kits.sql', 'r')
+            sqlFile = sk.read()
+            sk.close()
+            sqlCommands = sqlFile.split(';')
+            for command in sqlCommands:
+                mariaCur.execute(command)
+                mariaCon.commit()
+    except mariadb.Error as e:
+        if "empty statement" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
+
+    #setup demo protected areas (kills = jail)
+    try:
+        mariaCur.execute("SELECT * FROM {server}_protected_areas".format(server=config.Server_Name))
+        areas = mariaCur.fetchall()
+        if len(areas) == 0 or areas == None:
+            print("Inserting demo protected areas")
+            #import protected areas sql file
+            pa = open('..\\Setup\\protectedareas.sql', 'r')
+            sqlFile = pa.read().replace('{server}', config.Server_Name)
+            pa.close()
+            sqlCommands = sqlFile.split(';')
+            for command in sqlCommands:
+                mariaCur.execute(command)
+                mariaCon.commit()
+    except mariadb.Error as e:
+        if "empty statement" in str(e):
             pass
         else:
             print(f"Error: {e}")
