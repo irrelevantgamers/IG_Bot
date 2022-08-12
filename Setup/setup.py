@@ -577,7 +577,7 @@ if __name__ == '__main__':
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP3', ?, '4', False)",(config.PrivilegedRoles_VIP3,))
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP2', ?, '3', False)",(config.PrivilegedRoles_VIP2,))
             mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '2', False)",(config.PrivilegedRoles_VIP1,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '1', False)",(config.PrivilegedRoles_StandardUser,))
+            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('StandardUser', ?, '1', False)",(config.PrivilegedRoles_StandardUser,))
         mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
