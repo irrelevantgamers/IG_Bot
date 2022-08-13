@@ -228,8 +228,8 @@ if __name__ == '__main__':
             loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
             );
             """
-    server_jailinfo = f"""
-        CREATE TABLE IF NOT EXISTS {config.Server_Name}_jailinfo (
+    server_jail_info = f"""
+        CREATE TABLE IF NOT EXISTS {config.Server_Name}_jail_info (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT   COMMENT 'Primary KEY for the jailinfo Table',
             cellName        CHAR(100) NOT NULL                  COMMENT 'Name of the jail cell',
             spawnLocation   CHAR(100) NOT NULL                  COMMENT 'Spawn location for the jail cell',
@@ -480,7 +480,7 @@ if __name__ == '__main__':
 
     # Add tables to the table list
     tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,server_pendingDiscordMsg,
-                 shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers, server_jailinfo, server_offenders,
+                 shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers, server_jail_info, server_offenders,
                  server_protected_areas, server_recent_pvp, server_bans, server_buffs, server_vault_rentals,
                  server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
                  server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,
@@ -652,6 +652,25 @@ if __name__ == '__main__':
             pa = open('..\\Setup\\protectedareas.sql', 'r')
             sqlFile = pa.read().replace('{server}', config.Server_Name)
             pa.close()
+            sqlCommands = sqlFile.split(';')
+            for command in sqlCommands:
+                mariaCur.execute(command)
+                mariaCon.commit()
+    except mariadb.Error as e:
+        if "empty statement" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
+
+    #setup demo jail info
+    try:
+        mariaCur.execute("SELECT * FROM {server}_jail_info".format(server=config.Server_Name))
+        cells = mariaCur.fetchall()
+        if len(cells) == 0 or cells== None:
+            print("Inserting demo shop jail cell info")
+            ji = open('..\\Setup\\jail_info.sql', 'r')
+            sqlFile = ji.read().replace('{server}', config.Server_Name)
+            ji.close()
             sqlCommands = sqlFile.split(';')
             for command in sqlCommands:
                 mariaCur.execute(command)

@@ -6,7 +6,7 @@ import sqlite3
 import configparser
 from datetime import datetime, timedelta, timezone
 import sys
-
+import a2s
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
@@ -46,19 +46,6 @@ def syncPlayers(serverid):
     success = 0
     #recreate currentUsers table
     clearCurrentUsers_query = f"""DELETE FROM {serverName}_currentusers;"""
-    createCurrentUsers_query = f"""
-        CREATE TABLE IF NOT EXISTS {serverName}_currentusers (
-            conid           CHAR(100) NOT NULL UNIQUE COMMENT 'Connection ID of the player',
-            player          CHAR(100) COMMENT 'Name of the player',
-            userid          CHAR(100) COMMENT 'Funcom ID of the player',
-            platformid      CHAR(100) COMMENT 'Funcom Platform ID of the player',
-            steamPlatformId CHAR(100) COMMENT 'Steam Platform ID of the player',
-            X               CHAR(100) COMMENT 'X position of the player',
-            Y               CHAR(100) COMMENT 'Y position of the player',
-            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
-            );
-            """
-    
    
     try:
         syncCur.execute(clearCurrentUsers_query)
@@ -70,15 +57,15 @@ def syncPlayers(serverid):
     #get playerlist from steam
     SERVER_ADDRESS = (rcon_host, int(steamQueryPort))
 
-    with valve.source.a2s.ServerQuerier(SERVER_ADDRESS) as server:
-        info = server.info()
-        players = server.players()
-        server
-    userlist = []
+    #with valve.source.a2s.ServerQuerier(SERVER_ADDRESS) as server:
+    #    info = server.info()
+    #    players = server.players()
+    #    server
+    #userlist = []
     #print("{player_count}/{max_players} {server_name}".format(**info))
-    for player in sorted(players["players"],key=lambda p: p["score"], reverse=True):
-        userlist.append("{name}".format(**player))
-
+    #for player in sorted(players["players"],key=lambda p: p["score"], reverse=True):
+     #   userlist.append("{name}".format(**player))
+    userlist = a2s.players(SERVER_ADDRESS, timeout=5, encoding='utf-8')
 
     
     attempts = 0
@@ -98,11 +85,11 @@ def syncPlayers(serverid):
     i = 0    
     for index in range(len(playerlist) - 1):
         try:
-            item = playerlist[index].replace(userlist[i],"")
+            item = playerlist[index].replace(userlist[i].name,"")
             item = item.split(' | ')
             conid = str(item[0].strip())
             player = item[1].strip()
-            userid = str(userlist[i])
+            userid = str(userlist[i].name)
             platformid = str(item[3].strip())
             steamPlatformId = str(item[4].strip())
             if conid != "Idx":
@@ -176,14 +163,16 @@ def runSync(force):
                 lastUserSync = server[1]
                 now = datetime.now()
                 fiveMinAgo = now - timedelta(minutes=5)
+                fiveSecondsAgo = now - timedelta(seconds=5)
                 if force == True:
-                    try:
-                        syncPlayers(serverid)
-                        runSyncCur.execute("UPDATE servers SET lastUserSync = ? WHERE ID = ?", (now, serverid))
-                        runSyncCon.commit()
-                    except Exception as e:
-                        print(f"Could not sync players for ServerID {serverid}.\nError: {e}")
-                        pass
+                    if lastUserSync < fiveSecondsAgo:
+                        try:
+                            syncPlayers(serverid)
+                            runSyncCur.execute("UPDATE servers SET lastUserSync = ? WHERE ID = ?", (now, serverid))
+                            runSyncCon.commit()
+                        except Exception as e:
+                            print(f"Could not sync players for ServerID {serverid}.\nError: {e}")
+                            pass
                 else:
                     if lastUserSync == None:
                         try:

@@ -735,23 +735,29 @@ def discord_bot():
                 #get members
                 members = client.get_all_members()
                 if members != None:
+                    matchedMembers = []
                     for member in members:
+                        discordid = member.name + "#" + member.discriminator
+                        if matchedMembers.count(discordid) == 0:
+                            dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (1, False, member.name + "#" + member.discriminator))
+                            dbCon.commit()
                             if member.roles:
                                 matched = 0
                                 for role in member.roles:
                                     for privRole in privelegedRoles:
-                                        if role.name == privRole[0]:
-                                            multiplier = privRole[1]
-                                            isAdmin = privRole[2]
-                                            matched = 1
-                                            try:
-                                                dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (multiplier, isAdmin, member.name + "#" + member.discriminator))
-                                                dbCon.commit()
-                                            except mariadb.Error as e:
-                                                print(f"Error updating user privlege: {e}")
-                                                sys.exit(1)    
-                                    if matched == 1:
-                                        break
+                                        if matched == 0:
+                                            if role.name == privRole[0]:
+                                                multiplier = privRole[1]
+                                                isAdmin = privRole[2]
+                                                matched = 1
+                                                matchedMembers.append(discordid)
+                                                try:
+                                                    dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (multiplier, isAdmin, discordid))
+                                                    dbCon.commit()
+                                                except mariadb.Error as e:
+                                                    print(f"Error updating user privlege: {e}")
+                                                    sys.exit(1) 
+
             await asyncio.sleep(60) #check every minute
 
     async def buffWatcher():
@@ -915,6 +921,33 @@ def discord_bot():
                     dbCon.close()
 
             await asyncio.sleep(300)
+
+    async def checkIsAdmin(user):
+        try:
+            dbCon = mariadb.connect(
+            user=config.DB_user,
+            password=config.DB_pass,
+            host=config.DB_host,
+            port=config.DB_port,
+            database=config.DB_name
+
+        )
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB Platform: {e}")
+            sys.exit(1)
+        dbCur = dbCon.cursor()
+        dbCur.execute("SELECT isAdmin FROM accounts WHERE discordid =?", (user, ))
+        isAdmin = dbCur.fetchone()
+        if isAdmin != None:
+            if isAdmin[0] == True:
+                return True
+            else:
+                return False
+        dbCur.close()
+        dbCon.close()
+
+
+
 
     def clean_text(rgx_list, text):
         new_text = text
@@ -1117,8 +1150,14 @@ def discord_bot():
             channelID = message.channel.id
             await getUserInfo(author, channelID)
 
-        if message.content.startswith('!whosinhere'):
+        if message.content.startswith('!admin'):
             #stop order processing
             channelID = message.channel.id
+            author = message.author
+            isAdmin = await checkIsAdmin(author)
+            if isAdmin == True:
+                await message.channel.send("You are the father")
+            else:
+                await message.channel.send("You are not an admin")
             
     client.run(config.Discord_API_KEY)

@@ -66,7 +66,7 @@ def kill_stream():
 
             if last_event_time is None:
                 print("No last event time found. Setting to 0")
-                last_event_time = datetime.min
+                last_event_time = datetime.now() - timedelta(days=1)
             Killlog_Last_Event_Time = last_event_time
 
             exiled_gamedb_con = sqlite3.connect(gamedb_file)

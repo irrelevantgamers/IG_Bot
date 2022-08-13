@@ -1,4 +1,4 @@
 #Modules Needed
-python-valve, asyncio, mariadb, discord, sqlite3, folium
+python-valve, asyncio, mariadb, discord, sqlite3, folium, python-a2s
 mariadb~=1.0.11
 discord~=1.7.3
