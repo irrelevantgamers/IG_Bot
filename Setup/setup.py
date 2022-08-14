@@ -681,4 +681,20 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
+    #setup pvp leaderboards
+    try:     
+        lv = open('..\\Setup\\create_PVP_views.sql', 'r')
+        sqlFile = lv.read().replace('{server}', config.Server_Name)
+        lv.close()
+        sqlCommands = sqlFile.split(';')
+        for command in sqlCommands:
+            mariaCur.execute(command)
+            mariaCon.commit()
+    except mariadb.Error as e:
+        if "empty statement" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
+    
+
     close_mariaDB()

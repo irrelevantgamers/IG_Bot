@@ -163,9 +163,9 @@ def runSync(force):
                 lastUserSync = server[1]
                 now = datetime.now()
                 fiveMinAgo = now - timedelta(minutes=5)
-                fiveSecondsAgo = now - timedelta(seconds=5)
+                oneSecondsAgo = now - timedelta(seconds=1)
                 if force == True:
-                    if lastUserSync < fiveSecondsAgo:
+                    if lastUserSync < oneSecondsAgo:
                         try:
                             syncPlayers(serverid)
                             runSyncCur.execute("UPDATE servers SET lastUserSync = ? WHERE ID = ?", (now, serverid))
