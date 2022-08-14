@@ -126,6 +126,7 @@ if __name__ == '__main__':
             VaultRental_Channel           			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the vault rental to',
             Event_Channel           				CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the events to',
             Map_Url                                 CHAR(255) NOT NULL 					COMMENT 'URL to the public map page',
+            Prison_Exit_Coordinates                 CHAR(255) NOT NULL 					COMMENT 'Coordinates of the prison exit',
             lastCheckIn                             DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the server last checked in',
             lastUserSync                            DATETIME DEFAULT 0              	COMMENT 'Date and time of when the server last synced users',
             PRIMARY KEY (ID)
@@ -549,8 +550,9 @@ if __name__ == '__main__':
                     ServerBuffs_Channel,            	
                     VaultRental_Channel,
                     Event_Channel,
-                    Map_URL
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                    Map_URL,
+                    Prison_Exit_Coordinates
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 
 
@@ -582,7 +584,8 @@ if __name__ == '__main__':
                 config.Discord_ServerBuffs_Channel,
                 config.Discord_VaultRental_Channel,
                 config.Discord_Event_Channel,
-                config.Server_Map_Url))
+                config.Server_Map_Url,
+                config.Server_Prison_Exit_Coordinates))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):

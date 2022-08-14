@@ -1,5 +1,6 @@
 from pickle import FALSE
 from re import M
+from time import time
 
 
 def discord_bot():
@@ -1157,6 +1158,58 @@ def discord_bot():
             dbCon.close()
             await asyncio.sleep(300)
 
+    async def update_jail():
+        while True:
+            #get leaderboard channel and update building piece tracker leaderboard
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
+
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            dbCur = dbCon.cursor()
+
+            #update building piece tracking
+            dbCur.execute("Select id, servername, Jail_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT cellName, prisoner, sentenceTime, sentenceLength FROM {server}_jail_info ORDER BY ID ASC".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} Building Piece Tracker'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            cellName = result[0]
+                            prisoner = result[1]
+                            sentenceTime = result[2]
+                            sentenceLength = result[3]
+
+                            if prisoner == None:
+                                embedvar.add_field(name="Cell:{} \tPrisoner: {}".format(name,prisoner), value="Time Left: 0 minutes", inline=False)
+                            else:
+                                now = datetime.now()
+                                currentTime = datetime.timestamp(now)
+                                SentenceToSeconds = sentenceLength * 60
+                                SenEndTimeStamp = datetime.timestamp(sentenceTime) + SentenceToSeconds
+                                
+                                remaining = (SenEndTimeStamp - currentTime) / 60
+                                #update jail posting in discord
+                                if remaining < 0:
+                                    TimeLeft = 0
+                                else:
+                                    TimeLeft = remaining
+                                embedvar.add_field(name="Cell:{} \tPrisoner: {}".format(name,prisoner), value="Time Left: {} minutes".format(int(TimeLeft)),inline=False)
+                    
+                        await channel.send(embed=embedvar)
+            await asyncio.sleep(60)
 
     def clean_text(rgx_list, text):
         new_text = text
@@ -1179,6 +1232,7 @@ def discord_bot():
         client.loop.create_task(buffWatcher())
         client.loop.create_task(updateWantedList())
         client.loop.create_task(updateLeaderBoards())
+        client.loop.create_task(update_jail())
 
     @client.event
     async def on_message(message):

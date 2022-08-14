@@ -13,6 +13,7 @@ global Server_SteamQuery_Port
 global Server_Game_DB_Location
 global Server_Game_Log_Location
 global Server_Map_Url
+global Server_Prison_Exit_Coordinates
 global Discord_ServerLog_Channel
 global Discord_Killlog_Channel
 global Discord_Solo_LeaderBoardAll_Channel
@@ -59,6 +60,7 @@ Server_SteamQuery_Port = int(config["Server"]["SteamQuery_Port"])
 Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
 Server_Map_Url = config["Server"]["Map_Url"]
+Server_Prison_Exit_Coordinates = config["Server"]["Prison_Exit_Coordinates"]
 Discord_ServerLog_Channel = config["Discord"]["ServerLog_Channel"]
 Discord_Killlog_Channel = int(config["Discord"]["Killlog_Channel"])
 Discord_Solo_LeaderBoardAll_Channel = config["Discord"]["Solo_LeaderBoardAll_Channel"]
