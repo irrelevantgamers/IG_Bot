@@ -110,11 +110,13 @@ if __name__ == '__main__':
             Killlog_Channel			                CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the kill log to',
             Killlog_Last_Event_Time                 TIMESTAMP NOT NULL DEFAULT 0 COMMENT 'Last time the kill event was sent to the log',
             Solo_LeaderBoardAll_Channel		        CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board all time to',
-            Solo_LeaderBoard7Days_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 7 days to',
-            Solo_LeaderBoard30Days_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 30 days to',
+            Solo_LeaderBoard1Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 7 days to',
+            Solo_LeaderBoard7Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 7 days to',
+            Solo_LeaderBoard30Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 30 days to',
             Clan_LeaderBoardAll_Channel			    CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the clan leader board all time to',
-            Clan_LeaderBoard7Days_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the clan leader board 7 days to',
-            Clan_LeaderBoard30Days_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the clan leader board 30 days to',
+            Clan_LeaderBoard1Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the clan leader board 7 days to',
+            Clan_LeaderBoard7Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the clan leader board 7 days to',
+            Clan_LeaderBoard30Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the clan leader board 30 days to',
             BuildingPieceTracking_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the building piece tracking to',
             InventoryPieceTracking_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the inventory piece tracking to',
             Wanted_Channel              			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the wanted list to',
@@ -477,6 +479,23 @@ if __name__ == '__main__':
             loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
             );
     """
+    server_building_piece_tracking = f"""
+        CREATE TABLE IF NOT EXISTS {config.Server_Name}_building_piece_tracking (
+            clan_id         MEDIUMINT NOT NULL COMMENT 'Clan ID of the player',
+            clan_name       CHAR(100) NOT NULL COMMENT 'Name of the clan',
+            building_piece_count INT NOT NULL COMMENT 'Number of the building pieces',
+            PRIMARY KEY (clan_id)
+            );   
+    """
+
+    server_inventory_tracking = f"""
+        CREATE TABLE IF NOT EXISTS {config.Server_Name}_inventory_tracking (
+            clan_id         MEDIUMINT NOT NULL COMMENT 'Clan ID of the player',
+            clan_name       CHAR(100) NOT NULL COMMENT 'Name of the clan',
+            inventory_count INT NOT NULL COMMENT 'Number of the inventory items',
+            PRIMARY KEY (clan_id)
+            );
+    """
 
     # Add tables to the table list
     tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,server_pendingDiscordMsg,
@@ -484,7 +503,7 @@ if __name__ == '__main__':
                  server_protected_areas, server_recent_pvp, server_bans, server_buffs, server_vault_rentals,
                  server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
                  server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,
-                 server_activeTeleports, server_event_details, server_insults, server_teleportLog]
+                 server_activeTeleports, server_event_details, server_insults, server_teleportLog, server_building_piece_tracking, server_inventory_tracking]
 
     # Attempt to execute the create table queries
     print("Creating tables if they don't exist...")
@@ -514,12 +533,14 @@ if __name__ == '__main__':
                     logLocation,
                     ServerLog_Channel,				          
                     Killlog_Channel,           
-                    Solo_LeaderBoardAll_Channel,		  
-                    Solo_LeaderBoard7Days_Channel,	
-                    Solo_LeaderBoard30Days_Channel,	
-                    Clan_LeaderBoardAll_Channel,		
-                    Clan_LeaderBoard7Days_Channel,	
-                    Clan_LeaderBoard30Days_Channel,	
+                    Solo_LeaderBoardAll_Channel,
+                    Solo_LeaderBoard1Day_Channel,		  
+                    Solo_LeaderBoard7Day_Channel,	
+                    Solo_LeaderBoard30Day_Channel,	
+                    Clan_LeaderBoardAll_Channel,
+                    Clan_LeaderBoard1Day_Channel,		
+                    Clan_LeaderBoard7Day_Channel,	
+                    Clan_LeaderBoard30Day_Channel,	
                     BuildingPieceTracking_Channel,	
                     InventoryPieceTracking_Channel,	
                     Wanted_Channel,              	
@@ -529,7 +550,7 @@ if __name__ == '__main__':
                     VaultRental_Channel,
                     Event_Channel,
                     Map_URL
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 
 
@@ -546,11 +567,13 @@ if __name__ == '__main__':
                 config.Discord_ServerLog_Channel,
                 config.Discord_Killlog_Channel,
                 config.Discord_Solo_LeaderBoardAll_Channel,
-                config.Discord_Solo_LeaderBoard7Days_Channel,
-                config.Discord_Solo_LeaderBoard30Days_Channel,
+                config.Discord_Solo_LeaderBoard1Day_Channel,
+                config.Discord_Solo_LeaderBoard7Day_Channel,
+                config.Discord_Solo_LeaderBoard30Day_Channel,
                 config.Discord_Clan_LeaderBoardAll_Channel,
-                config.Discord_Clan_LeaderBoard7Days_Channel,
-                config.Discord_Clan_LeaderBoard30Days_Channel,
+                config.Discord_Clan_LeaderBoard1Day_Channel,
+                config.Discord_Clan_LeaderBoard7Day_Channel,
+                config.Discord_Clan_LeaderBoard30Day_Channel,
                 config.Discord_BuildingPieceTracking_Channel,
                 config.Discord_InventoryPieceTracking_Channel,
                 config.Discord_Wanted_Channel,

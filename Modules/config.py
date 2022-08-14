@@ -16,10 +16,12 @@ global Server_Map_Url
 global Discord_ServerLog_Channel
 global Discord_Killlog_Channel
 global Discord_Solo_LeaderBoardAll_Channel
-global Discord_Solo_LeaderBoard30Days_Channel
-global Discord_Solo_LeaderBoard7Days_Channel
-global Discord_Clan_LeaderBoard30Days_Channel
-global Discord_Clan_LeaderBoard7Days_Channel
+global Discord_Solo_LeaderBoard30Day_Channel
+global Discord_Solo_LeaderBoard7Day_Channel
+global Discord_Solo_LeaderBoard1Day_Channel
+global Discord_Clan_LeaderBoard30Day_Channel
+global Discord_Clan_LeaderBoard7Day_Channel
+global Discord_Clan_LeaderBoard1Day_Channel
 global Discord_Clan_LeaderBoardAll_Channel
 global Discord_BuildingPieceTracking_Channel
 global Discord_InventoryPieceTracking_Channel
@@ -60,11 +62,13 @@ Server_Map_Url = config["Server"]["Map_Url"]
 Discord_ServerLog_Channel = config["Discord"]["ServerLog_Channel"]
 Discord_Killlog_Channel = int(config["Discord"]["Killlog_Channel"])
 Discord_Solo_LeaderBoardAll_Channel = config["Discord"]["Solo_LeaderBoardAll_Channel"]
-Discord_Solo_LeaderBoard30Days_Channel = config["Discord"]["Solo_LeaderBoard30Days_Channel"]
-Discord_Solo_LeaderBoard7Days_Channel = config["Discord"]["Solo_LeaderBoard7Days_Channel"]
+Discord_Solo_LeaderBoard30Day_Channel = config["Discord"]["Solo_LeaderBoard30Day_Channel"]
+Discord_Solo_LeaderBoard7Day_Channel = config["Discord"]["Solo_LeaderBoard7Day_Channel"]
+Discord_Solo_LeaderBoard1Day_Channel = config["Discord"]["Solo_LeaderBoard1Day_Channel"]
 Discord_Clan_LeaderBoardAll_Channel = config["Discord"]["Clan_LeaderBoardAll_Channel"]
-Discord_Clan_LeaderBoard30Days_Channel = config["Discord"]["Clan_LeaderBoard30Days_Channel"]
-Discord_Clan_LeaderBoard7Days_Channel = config["Discord"]["Clan_LeaderBoard7Days_Channel"]
+Discord_Clan_LeaderBoard30Day_Channel = config["Discord"]["Clan_LeaderBoard30Day_Channel"]
+Discord_Clan_LeaderBoard7Day_Channel = config["Discord"]["Clan_LeaderBoard7Day_Channel"]
+Discord_Clan_LeaderBoard1Day_Channel = config["Discord"]["Clan_LeaderBoard1Day_Channel"]
 Discord_BuildingPieceTracking_Channel = config["Discord"]["BuildingPieceTracking_Channel"]
 Discord_InventoryPieceTracking_Channel = config["Discord"]["InventoryPieceTracking_Channel"]
 Discord_Wanted_Channel = config["Discord"]["Wanted_Channel"]

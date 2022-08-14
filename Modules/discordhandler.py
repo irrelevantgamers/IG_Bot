@@ -946,7 +946,216 @@ def discord_bot():
         dbCur.close()
         dbCon.close()
 
+    async def updateLeaderBoards():
+        while True:
+            #get leaderboard channel and update building piece tracker leaderboard
+            try:
+                dbCon = mariadb.connect(
+                user=config.DB_user,
+                password=config.DB_pass,
+                host=config.DB_host,
+                port=config.DB_port,
+                database=config.DB_name
 
+            )
+            except mariadb.Error as e:
+                print(f"Error connecting to MariaDB Platform: {e}")
+                sys.exit(1)
+            dbCur = dbCon.cursor()
+
+            #update building piece tracking
+            dbCur.execute("Select id, servername, BuildingPieceTracking_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT clan_id, clan_name, building_piece_count FROM {server}_building_piece_tracking ORDER BY building_piece_count DESC LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} Building Piece Tracker'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            clan_id = result[0]
+                            clan_name = result[1]
+                            building_piece_count = result[2]
+                            embedvar.add_field(name="{}".format(clan_name,), value="Count:{}".format(building_piece_count), inline=False)
+                        await channel.send(embed=embedvar)
+
+            #update inventory tracking
+            dbCur.execute("Select id, servername, InventoryPieceTracking_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT clan_id, clan_name, inventory_count FROM {server}_inventory_tracking ORDER BY inventory_count DESC LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} Inventory Count Tracker'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            clan_id = result[0]
+                            clan_name = result[1]
+                            inventory_count = result[2]
+                            embedvar.add_field(name="{}".format(clan_name,), value="Count:{}".format(inventory_count), inline=False)
+                        await channel.send(embed=embedvar)
+
+
+            #update solo all time leaderboard
+            dbCur.execute("Select id, servername, Solo_LeaderBoardAll_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, player, kills, deaths FROM {server}_solo_pvp_leader_all LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} All Time PVP Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+
+            #update solo monthly leaderboard
+            dbCur.execute("Select id, servername, Solo_LeaderBoard30Day_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, player, kills, deaths FROM {server}_solo_pvp_leader_30Day LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} 30 Day PVP Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+
+            #update solo weekly leaderboard
+            dbCur.execute("Select id, servername, Solo_LeaderBoard7Day_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, player, kills, deaths FROM {server}_solo_pvp_leader_7Day LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} 7 Day PVP Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+            
+            #update solo daily leaderboard
+            dbCur.execute("Select id, servername, Solo_LeaderBoard1Day_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, player, kills, deaths FROM {server}_solo_pvp_leader_1Day LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} 1 Day PVP Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+
+            #update clan all leaderboard
+            dbCur.execute("Select id, servername, Clan_LeaderBoardAll_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, clan, kills, deaths FROM {server}_clan_pvp_leader_All LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} Clan All Time Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+
+            #update clan 30day leaderboard
+            dbCur.execute("Select id, servername, Clan_LeaderBoard30Day_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, clan, kills, deaths FROM {server}_clan_pvp_leader_30day LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} Clan 30 Day Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+
+             #update clan 7day leaderboard
+            dbCur.execute("Select id, servername, Clan_LeaderBoard7Day_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, clan, kills, deaths FROM {server}_clan_pvp_leader_7day LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} Clan 7 Day Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+            
+            #update clan 7day leaderboard
+            dbCur.execute("Select id, servername, Clan_LeaderBoard1Day_Channel FROM servers WHERE Enabled =True")
+            servers = dbCur.fetchall()
+            if servers != None:
+                for server in servers:
+                    channel = client.get_channel(int(server[2]))
+                    await channel.purge()
+                    dbCur.execute("SELECT place, clan, kills, deaths FROM {server}_clan_pvp_leader_1day LIMIT 20".format(server=server[1]))
+                    result = dbCur.fetchall()
+                    if result != None:
+                        embedvar = discord.Embed(title='{server} Clan 1 Day Leaderboard'.format(server=server[1]),color = discord.Color.gold())
+                        for result in result:
+                            rank = result[0]
+                            player = result[1]
+                            kills = result[2]
+                            deaths = result[3]
+                            embedvar.add_field(name="{} \nPlace: {}".format(player,rank), value="Kills: {} Deaths:{}".format(kills,deaths))
+                        await channel.send(embed=embedvar)
+
+
+
+            dbCon.close()
+            await asyncio.sleep(300)
 
 
     def clean_text(rgx_list, text):
@@ -969,6 +1178,7 @@ def discord_bot():
         client.loop.create_task(updateShopList())
         client.loop.create_task(buffWatcher())
         client.loop.create_task(updateWantedList())
+        client.loop.create_task(updateLeaderBoards())
 
     @client.event
     async def on_message(message):

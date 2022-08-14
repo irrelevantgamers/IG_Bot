@@ -20,6 +20,7 @@ from game_log_watcher import game_log_watcher
 from accountpayroll import pay_users
 from orderprocessing import processOrderLoop
 from mapmaker import create_conan_maps
+from game_db_watcher import watch_game_db
 
 if __name__ == "__main__":
     # Run setup for the bot
@@ -35,6 +36,8 @@ if __name__ == "__main__":
     accountPayrollRunning = False
     orderProcessingRunning = False
     mapMakerProcessRunning = False
+    GameDBWatcherRunning = False
+
     #start modules and loop to check for status   
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10) 
     while True:
@@ -136,6 +139,20 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f'Map Maker Process error: {e}')
                 mapMakerProcessRunning = False
+
+            try:
+                if not GameDBWatcherRunning:
+                    GameDBWatcher = executor.submit(watch_game_db)
+                    GameDBWatcherRunning = True
+                if GameDBWatcher.done():
+                    print(f'Status: Game DB Watcher is not running. Restarting...')
+                    GameDBWatcherRunning = False
+                else:
+                    print(f'Status: Game DB Watcher is still running')
+                    GameDBWatcherRunning = True
+            except Exception as e:
+                print(f'Game DB Watcher error: {e}')
+                GameDBWatcherRunning = False
 
             attempts = 0
             rconSuccess = False
