@@ -243,7 +243,7 @@ def discord_bot():
                         category = row[5]
                         maxCountPerPurchase = row[6]
                         
-                        embedvar.add_field(name="ID: {} \tName: {} x {}".format(itemid, itemcount, itemname), value="Price: {}\nMax per purchase: {}\nDescription: {}".format(price, maxCountPerPurchase, config.Shop_CurrencyName, description),inline=False)
+                        embedvar.add_field(name="ID: {} \tName: {} x {}".format(itemid, itemcount, itemname), value="Price: {} {}\nMax per purchase: {}\nDescription: {}".format(price, config.Shop_CurrencyName, maxCountPerPurchase, description),inline=False)
                     await channel.send(embed=embedvar)
 
             except Exception as e:
