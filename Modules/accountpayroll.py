@@ -32,13 +32,14 @@ def pay_users():
                 if currentUsers != None and currentUsers != '':
                     for user in currentUsers:
                         platformID = user[0]
-                        dbCur.execute("select ID, walletbalance, lastPaid, conanPlatformid FROM accounts WHERE conanPlatformid = ?", (platformID,))
+                        dbCur.execute("select ID, walletbalance, lastPaid, conanPlatformid, earnratemultiplier FROM accounts WHERE conanPlatformid = ?", (platformID,))
                         account = dbCur.fetchone()
                         if account != None:
                             now = datetime.now()
                             lastPaid = account[2]
                             walletbalance = account[1]
-                            paycheck = int(config.Shop_PayCheck)
+                            earnratemultiplier = account[4]
+                            paycheck = int(config.Shop_PayCheck) * int(earnratemultiplier)
                             paycheckinterval = int(config.Shop_PayCheck_Interval)
                             if lastPaid < (now - timedelta(minutes=paycheckinterval)):
                                 dbCur.execute("UPDATE accounts SET walletbalance = ?, lastPaid = ? WHERE ID = ?", (walletbalance + paycheck, now, account[0]))
