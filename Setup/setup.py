@@ -2,6 +2,7 @@ import mariadb
 import configparser
 import sys
 from datetime import datetime
+import sqlite3
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
@@ -758,5 +759,21 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
     
+    #setup custom views
+    try:
+        cv = open('..\\Setup\\CustomViews.sql', 'r')
+        sqlFile = cv.read().replace('{server}', config.Server_Name)
+        cv.close()
+        sqlCommands = sqlFile.split(';')
+        gamedbCon = sqlite3.connect(config.Server_Game_DB_Location)
+        gamedbCur = gamedbCon.cursor()
+        for command in sqlCommands:
+            gamedbCur.execute(command)
+            gamedbCon.commit()
+    except mariadb.Error as e:
+        if "empty statement" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
 
     close_mariaDB()
