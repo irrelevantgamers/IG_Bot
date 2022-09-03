@@ -19,10 +19,11 @@ def easyRcon(command):
                 rcon.close()
                 response_text = response.body.decode('utf-8', 'ignore')
                 print(response_text)
+                return response_text
                 success = 1
-        except Exception:
+        except Exception as e:
             success = 0
             attempts = attempts + 1
+            print(e)
             time.sleep(1)
-
 

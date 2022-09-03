@@ -47,6 +47,8 @@ global PrivilegedRoles_VIP1
 global PrivilegedRoles_VIP2
 global PrivilegedRoles_VIP3
 global PrivilegedRoles_VIP4
+global Firewall_Bot_Enabled
+global Firewall_Blocklist_file
 
 
 config = configparser.ConfigParser()
@@ -99,3 +101,5 @@ PrivilegedRoles_VIP2 = config["PrivilegedRoles"]["VIP2"]
 PrivilegedRoles_VIP3 = config["PrivilegedRoles"]["VIP3"]
 PrivilegedRoles_VIP4 = config["PrivilegedRoles"]["VIP4"]
 Time_Timezone = int(config["Time"]["Timezone"])
+Firewall_Bot_Enabled = bool(config["Firewall"]["Firewall_Bot_Enabled"])
+Firewall_Blocklist_file = config["Firewall"]["Firewall_Blocklist_file"]

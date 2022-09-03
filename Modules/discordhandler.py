@@ -1,8 +1,7 @@
 from pickle import FALSE
 from re import M
 from time import time
-
-
+import removefirewallblock
 
 def discord_bot():
     from asyncio.windows_events import NULL
@@ -750,7 +749,8 @@ def discord_bot():
                     for member in members:
                         discordid = member.name + "#" + member.discriminator
                         if matchedMembers.count(discordid) == 0:
-                            dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (1, False, member.name + "#" + member.discriminator))
+                            memberdiscordid = discordid
+                            dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (1, False, memberdiscordid))
                             dbCon.commit()
                             if member.roles:
                                 matched = 0
@@ -763,7 +763,7 @@ def discord_bot():
                                                 matched = 1
                                                 matchedMembers.append(discordid)
                                                 try:
-                                                    dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (multiplier, isAdmin, discordid))
+                                                    dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?", (multiplier, isAdmin, memberdiscordid))
                                                     dbCon.commit()
                                                 except mariadb.Error as e:
                                                     print(f"Error updating user privlege: {e}")
@@ -1660,5 +1660,94 @@ def discord_bot():
             senderID = message.author.name + "#" + message.author.discriminator
             channelID = message.channel.id
             await exitVault(senderID,channelID)
+
+        if message.content.startswith('!unblock'):
+            author = message.author
+            userin = message.content
+            userin = userin[9:]
+            userin = userin.strip()
+            if (config.Firewall_Bot_Enabled is True):
+                #isAdmin ?
+                isAdmin = await checkIsAdmin(author)
+                if isAdmin == True:
+                    firewallreturn = removefirewallblock.removeIPfromBlocklist(userin)
+                    if firewallreturn != None:
+                        msg = firewallreturn
+                    else:
+                        msg = "error in removefirewallblock.removeIPfromBlockList"
+
+            else:
+                msg = ("Firewall module is not enabled")
             
+            await message.channel.send(msg)
+
+        if message.content.startswith('!unban'):
+            author = message.author
+            pattern = re.compile(r'(?: <\S*[0-9]*>)?', re.IGNORECASE)
+            match = pattern.findall(message.content)
+            
+            mentioned = message.mentions
+            mentionedCount = len(mentioned)
+
+            userin = message.content
+            userin = userin[7:]
+            #isAdmin ?
+            isAdmin = await checkIsAdmin(author)
+            if isAdmin == True:
+                if mentionedCount != 0:
+                        try:
+                            shopCon = mariadb.connect(
+                            user=config.DB_user,
+                            password=config.DB_pass,
+                            host=config.DB_host,
+                            port=config.DB_port,
+                            database=config.DB_name
+
+                            )
+                        except mariadb.Error as e:
+                            print(f"Error connecting to MariaDB Platform: {e}")
+                            sys.exit(1)
+
+
+                        # Get MariaCursor
+                        shopCur = shopCon.cursor()     
+                           
+                        for mentions in mentioned:
+                            discordid = mentions.name + "#" + mentions.discriminator
+                            #print(f"{senderDiscordID} is gifting {gift} to {discordid}")
+                            
+                            #Get starting balance
+                            shopCur.execute(f"SELECT steamplatformid FROM accounts WHERE discordid =?", (discordid, ))
+                            target = shopCur.fetchone()
+                            if target == None:
+                                msg = (f"{discordid} is not associated with an account.")
+                            else:
+                                #unban
+                                steamid = target[0]
+                                print("Unbanning player " + steamid)
+                                rconreturn = removefirewallblock.unbanPlayer(steamid)
+                                if rconreturn != None:
+                                    msg = (f"{rconreturn}")
+                                else:
+                                    msg = (f"error in removefirewallblock.unbanPlayer")
+                                    
+                                
+                            
+                        shopCur.close()
+                        shopCon.close()
+                else:
+                    if userin != "":
+                        steamid = userin
+                        print("Unbanning player " + steamid)
+                        rconreturn = removefirewallblock.unbanPlayer(steamid)
+                        if rconreturn != None:
+                            msg = (f"{rconreturn}")
+                        else:
+                            msg = (f"error in removefirewallblock.unbanPlayer")
+                    else:
+                        msg = ("Please provide a steamid or mention a user to unban")
+            else:
+                msg = ("You are not an admin")
+            await message.channel.send(msg)
+
     client.run(config.Discord_API_KEY)
