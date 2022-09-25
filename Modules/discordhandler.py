@@ -20,13 +20,14 @@ def discord_bot():
     import random
     import string
     from datetime import datetime, timedelta
-
+    import os
+    import easyrcon
     # Get server id from config file and get server info from mariadb
     sys.path.insert(0, '..\\Modules')
     # read in the config variables from importconfig.py
     import config
 
-    intents = discord.Intents.default()
+    intents = discord.Intents.all()
     intents.members = True
     client = discord.Client(intents=intents)
 
@@ -1398,6 +1399,9 @@ def discord_bot():
 
     @client.event
     async def on_message(message):
+        #check if we need to exit
+        if os.path.exists('..\\restart'):
+            os._exit(0)
         if message.author == client.user:
             return
 

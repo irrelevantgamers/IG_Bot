@@ -154,7 +154,7 @@ def runSync(force):
         sys.exit(1)
 
     runSyncCur = runSyncCon.cursor()
-    runSyncCur.execute("Select ID, lastUserSync FROM servers WHERE Enabled =TRUE")
+    runSyncCur.execute("Select ID, lastUserSync FROM servers WHERE Enabled =TRUE and serverName =?", (config.Server_Name,))
     servers = runSyncCur.fetchall()
     if servers != None:
             for server in servers:

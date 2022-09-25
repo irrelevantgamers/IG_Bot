@@ -9,8 +9,12 @@ from datetime import datetime, timedelta
 import valve.rcon
 from usersync import runSync
 from getconid import getconid
+import os
 def watch_game_db():
     while True:
+        #check if we need to exit
+        if os.path.exists('..\\restart'):
+            os._exit(0)
         try:
                 dbCon = mariadb.connect(
                 user=config.DB_user,

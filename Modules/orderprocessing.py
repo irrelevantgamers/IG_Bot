@@ -7,7 +7,7 @@ def processOrderLoop():
     import valve.rcon
     import config
     from getconid import getconid
-
+    import os
     #setup logging
     import logging
     from logging.handlers import RotatingFileHandler
@@ -112,8 +112,11 @@ def processOrderLoop():
                 pass
 
     print("Starting Order Processor")
+    logger.info('Starting Order Processor')
     while True:
-        logger.info('Starting Order Processor')
+        #check if we need to exit
+        if os.path.exists('..\\restart'):
+            os._exit(0)
         try:
                 shopCon = mariadb.connect(
                 user=config.DB_user,

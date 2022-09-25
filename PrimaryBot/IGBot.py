@@ -10,7 +10,7 @@ import valve.rcon
 from concurrent.futures import Executor, process
 import concurrent.futures
 import lovely_logger as log # pip install lovely-logger
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 # add Modules folder to system path
@@ -74,7 +74,26 @@ if __name__ == "__main__":
     #start modules and loop to check for status   
     logger.info('Starting bot modules')
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10) 
+    startTime = datetime.now()
+    reboottime = startTime + timedelta(minutes=15)
+    print ("Bot started at: " + str(startTime))
+    logger.info('Bot started at: ' + str(startTime))
+    print ("Bot will reboot at: " + str(reboottime))
+    logger.info('Bot will reboot at: ' + str(reboottime))
+    #see if restart file exists if so delete it
+    if os.path.exists('..\\restart'):
+        os.remove('..\\restart')
+        
     while True:
+        currentTime = datetime.now()
+        print ("checking if bot restart needed")
+        if currentTime > reboottime:
+            #restart bot every 15 minutes
+            print ("restarting bot")
+            logger.info('Restarting bot')
+            open('..\\restart', 'w+')
+            executor.shutdown(wait=True)
+            os._exit(0)
         if outOfKarma == False:
             try:
                 if not killlogRunning:

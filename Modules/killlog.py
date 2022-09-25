@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 sys.path.insert(0, '..\\Modules')
 #read in the config variables from importconfig.py
 import config
-
+import os
 def connect_mariadb():
     global mariaCon
     global mariaCur
@@ -39,6 +39,9 @@ def close_mariaDB():
 def kill_stream():
     print("Exiled Kill Stream Started")
     while True:
+        #check if we need to exit
+        if os.path.exists('..\\restart'):
+            os._exit(0)
         # read in last event time
         try:
                 dbCon = mariadb.connect(

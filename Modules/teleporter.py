@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 #setup logging
 import logging
 from logging.handlers import RotatingFileHandler
-
+import os
 
 
 def TeleportRequestWatcher():
@@ -33,6 +33,9 @@ def TeleportRequestWatcher():
     logger.addHandler(fileHandler)
     logger.info('Teleport Request Watcher Started')
     while True:
+        #check if we need to exit
+        if os.path.exists('..\\restart'):
+            os._exit(0)
         try:
                 dbCon = mariadb.connect(
                 user=config.DB_user,

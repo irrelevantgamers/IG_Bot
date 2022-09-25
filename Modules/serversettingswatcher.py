@@ -4,9 +4,13 @@ import time
 import mariadb
 from datetime import datetime
 import sys
+import os
 
 def WatchForServerSettings():
     while True:
+        #check if we need to exit
+        if os.path.exists('..\\restart'):
+            os._exit(0)
         #This function watches for server buffs
         try:
             dbCon = mariadb.connect(
