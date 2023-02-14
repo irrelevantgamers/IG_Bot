@@ -1,36 +1,28 @@
-from asyncio import subprocess
-from concurrent.futures import Executor, process
-from pickle import TRUE
+from concurrent.futures import Executor
 import time
-import concurrent.futures
 import sys
 import subprocess
-import multiprocessing
 import valve.rcon
-from concurrent.futures import Executor, process
 import concurrent.futures
-import lovely_logger as log # pip install lovely-logger
 from datetime import datetime, timedelta
 import os
+# setup logging
+import logging
+from logging.handlers import RotatingFileHandler
+import config
+from Modules.killlog import kill_stream
+from Modules.discordhandler import discord_bot
+from Modules.usersync import runSync
+from Modules.game_log_watcher import game_log_watcher
+from Modules.accountpayroll import pay_users
+from Modules.orderprocessing import processOrderLoop
+from Modules.mapmaker import create_conan_maps
+from Modules.game_db_watcher import watch_game_db
+from Modules.teleporter import TeleportRequestWatcher, CancelAllTeleportRequests
+from Modules.serversettingswatcher import WatchForServerSettings
 
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
-import config
-from killlog import kill_stream
-from discordhandler import discord_bot
-from usersync import runSync
-from game_log_watcher import game_log_watcher
-from accountpayroll import pay_users
-from orderprocessing import processOrderLoop
-from mapmaker import create_conan_maps
-from game_db_watcher import watch_game_db
-from teleporter import TeleportRequestWatcher, CancelAllTeleportRequests
-from serversettingswatcher import WatchForServerSettings
-
-#setup logging
-import logging
-from logging.handlers import RotatingFileHandler
-
 
 if __name__ == "__main__":
     # create logger
@@ -45,9 +37,9 @@ if __name__ == "__main__":
 
     # set the handler
     fileHandler = RotatingFileHandler(
-    filename='..\\logs\\IGBOT.log', 
-    maxBytes=10000, 
-    backupCount=2
+        filename='..\\logs\\IGBOT.log',
+        maxBytes=10000,
+        backupCount=2
     )
     fileHandler.setFormatter(logFileFormatter)
     fileHandler.setLevel(level=logging.INFO)
@@ -59,7 +51,7 @@ if __name__ == "__main__":
     logger.info("Setting up bot DB info...")
     p = subprocess.call(["python", "..\\Setup\\setup.py"], stdout=sys.stdout)
     logger.info('Setup complete')
-    #establish bot module status variables
+    # establish bot module status variables
     outOfKarma = False
     killlogRunning = False
     discordhandlerRunning = False
@@ -71,30 +63,30 @@ if __name__ == "__main__":
     GameDBWatcherRunning = False
     TeleporterWatcherRunning = False
     serversettingswatcherrunning = False
-    #start modules and loop to check for status   
+    # start modules and loop to check for status
     logger.info('Starting bot modules')
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=10) 
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
     startTime = datetime.now()
     reboottime = startTime + timedelta(minutes=15)
-    print ("Bot started at: " + str(startTime))
+    print("Bot started at: " + str(startTime))
     logger.info('Bot started at: ' + str(startTime))
-    print ("Bot will reboot at: " + str(reboottime))
+    print("Bot will reboot at: " + str(reboottime))
     logger.info('Bot will reboot at: ' + str(reboottime))
-    #see if restart file exists if so delete it
+    # see if restart file exists if so delete it
     if os.path.exists('..\\restart'):
         os.remove('..\\restart')
-        
+
     while True:
         currentTime = datetime.now()
-        print ("checking if bot restart needed")
+        print("checking if bot restart needed")
         if currentTime > reboottime:
-            #restart bot every 15 minutes
-            print ("restarting bot")
+            # restart bot every 15 minutes
+            print("restarting bot")
             logger.info('Restarting bot')
             open('..\\restart', 'w+')
             executor.shutdown(wait=True)
             os._exit(0)
-        if outOfKarma == False:
+        if not outOfKarma:
             try:
                 if not killlogRunning:
                     killlog = executor.submit(kill_stream)
@@ -112,7 +104,10 @@ if __name__ == "__main__":
                 print(f'Kill Log Error: {e}')
                 logger.error(f'Kill Log Error: {e}')
                 killlogRunning = False
-            
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
+                killlogRunning = False
+
             try:
                 if not discordhandlerRunning:
                     discordhandler = executor.submit(discord_bot)
@@ -129,6 +124,9 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f'Discord Handler Error: {e}')
                 logger.error(f'Discord Handler Error: {e}')
+                discordhandlerRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
                 discordhandlerRunning = False
 
             try:
@@ -148,6 +146,9 @@ if __name__ == "__main__":
                 print(f'User Sync Error: {e}')
                 logger.error(f'User Sync Error: {e}')
                 userSyncRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
+                userSyncRunning = False
 
             try:
                 if not gameLogWatcherRunning:
@@ -165,6 +166,9 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f'Game Log Watcher error: {e}')
                 logger.error(f'Game Log Watcher error: {e}')
+                gameLogWatcherRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
                 gameLogWatcherRunning = False
 
             try:
@@ -184,6 +188,9 @@ if __name__ == "__main__":
                 print(f'Account Payroll error: {e}')
                 logger.error(f'Account Payroll error: {e}')
                 accountPayrollRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
+                accountPayrollRunning = False
 
             try:
                 if not orderProcessingRunning:
@@ -201,6 +208,9 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f'Order Processing error: {e}')
                 logger.error(f'Order Processing error: {e}')
+                orderProcessingRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
                 orderProcessingRunning = False
 
             try:
@@ -220,6 +230,9 @@ if __name__ == "__main__":
                 print(f'Map Maker Process error: {e}')
                 logger.error(f'Map Maker Process error: {e}')
                 mapMakerProcessRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
+                mapMakerProcessRunning = False
 
             try:
                 if not GameDBWatcherRunning:
@@ -237,6 +250,9 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f'Game DB Watcher error: {e}')
                 logger.error(f'Game DB Watcher error: {e}')
+                GameDBWatcherRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
                 GameDBWatcherRunning = False
 
             try:
@@ -256,6 +272,9 @@ if __name__ == "__main__":
                 print(f'Teleporter Watcher error: {e}')
                 logger.error(f'Teleporter Watcher error: {e}')
                 TeleporterWatcherRunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
+                TeleporterWatcherRunning = False
 
             try:
                 if not serversettingswatcherrunning:
@@ -274,13 +293,17 @@ if __name__ == "__main__":
                 print(f'Server Settings Watcher error: {e}')
                 logger.error(f'Server Settings Watcher error: {e}')
                 serversettingswatcherrunning = False
+            except BaseException or SystemExit or KeyboardInterrupt or GeneratorExit:
+                print('There was an unknown error')
+                serversettingswatcherrunning = False
 
             logger.info('Checking karma status')
             attempts = 0
             rconSuccess = False
             while rconSuccess == False and attempts <= 5:
                 try:
-                    with valve.rcon.RCON((config.Server_RCON_Host, int(config.Server_RCON_Port)), config.Server_RCON_Pass) as rcon:
+                    with valve.rcon.RCON((config.Server_RCON_Host, int(config.Server_RCON_Port)),
+                                         config.Server_RCON_Pass) as rcon:
                         response = rcon.execute("listplayers")
                         rcon.close()
                         response_text = response.body.decode('utf-8', 'ignore')
@@ -302,7 +325,7 @@ if __name__ == "__main__":
                     executor.submit(CancelAllTeleportRequests(config.Server_Name))
                     pass
 
-            time.sleep(30) # wait 30 seconds before checking status
+            time.sleep(30)  # wait 30 seconds before checking status
         else:
             print("Out of Karma! Stopping all rcon dependant modules until karma is regained...")
             logger.warning('Out of Karma! Stopping all rcon dependant modules until karma is regained...')
@@ -325,5 +348,5 @@ if __name__ == "__main__":
             serversettingswatcherrunning = False
             logger.info('Server Settings Watcher stopped')
             logger.info('waiting for karma to be regained')
-            time.sleep(300) # wait 5 minutes before releasing modules
+            time.sleep(300)  # wait 5 minutes before releasing modules
             outOfKarma = False

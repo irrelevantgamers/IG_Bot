@@ -1,20 +1,15 @@
-from time import sleep
 import re
 import time
-import requests
-import json
 import sqlite3
 import os
-import configparser
 import mariadb
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+
 
 def game_log_watcher():
     while True:
         try:
-            
-
 
             # Get server id from config file and get server info from mariadb
             sys.path.insert(0, '..\\Modules')
@@ -42,10 +37,10 @@ def game_log_watcher():
                 mariaCur.close()
                 mariaCon.close()
 
-
             # check log filesize (for detect new logfile)
             global file_size_log
             file_size_log = os.stat(config.Server_Game_Log_Location).st_size
+
             # read logfile
             def read_log(logfile):
                 global file_size_log
@@ -65,7 +60,9 @@ def game_log_watcher():
             def discord_message(message):
                 try:
                     connect_mariadb()
-                    mariaCur.execute("INSERT INTO {servername}_pendingDiscordMsg (message, destChannelID, sent) VALUES (?,?,?)".format(servername=config.Server_Name), (message, config.Discord_ServerLog_Channel, False))
+                    mariaCur.execute(
+                        "INSERT INTO {servername}_pendingDiscordMsg (message, destChannelID, sent) VALUES (?,?,?)".format(
+                            servername=config.Server_Name), (message, config.Discord_ServerLog_Channel, False))
                     mariaCon.commit()
                     close_mariaDB()
                 except Exception as e:
@@ -75,28 +72,29 @@ def game_log_watcher():
             def save_log(loglist):
                 try:
                     # open db connection
-                    connection = sqlite3.connect('..\\Modules\\connectionlog.db')
-                    cursor = connection.cursor()
+                    logconnection = sqlite3.connect('..\\Modules\\connectionlog.db')
+                    logcursor = logconnection.cursor()
 
                     if loglist[0] == "connection":
-                        cursor.execute(f"INSERT INTO connection (type, name, steamid, ip, time) VALUES ('{loglist[1]}', '{loglist[2]}', '{loglist[3]}', '{loglist[4]}', '{loglist[5]}')")
-                        connection.commit()
+                        logcursor.execute(
+                            f"INSERT INTO connection (type, name, steamid, ip, time) VALUES ('{loglist[1]}', '{loglist[2]}', '{loglist[3]}', '{loglist[4]}', '{loglist[5]}')")
+                        logconnection.commit()
 
                     # close db connection
-                    cursor.close()
-                    connection.close()
+                    logcursor.close()
+                    logconnection.close()
 
                 except sqlite3.Error:
                     print("an error occurred while opening/write the logdatabase")
                     pass
 
             # convert time
-            def convert_time(time):
-                time = datetime.strptime(time, "%Y.%m.%d-%H.%M.%S:%f") + timedelta(hours=config.Time_Timezone)
-                time = time.strftime("%Y-%m-%d %H:%M:%S")
-                return time
+            def convert_time(contime):
+                contime = datetime.strptime(contime, "%Y.%m.%d-%H.%M.%S:%f") + timedelta(hours=config.Time_Timezone)
+                contime = contime.strftime("%Y-%m-%d %H:%M:%S")
+                return contime
 
-            def register(inputcode):
+            def register(reginputcode):
                 try:
                     dbCon = mariadb.connect(
                         user=config.DB_user,
@@ -110,46 +108,52 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
-                dbCur.execute("SELECT discordID, discordObjID, registrationcode FROM registration_codes WHERE curstatus = FALSE")
+                dbCur.execute(
+                    "SELECT discordID, discordObjID, registrationcode FROM registration_codes WHERE curstatus = FALSE")
                 results = dbCur.fetchall()
                 for row in results:
                     discordID = row[0]
                     discordObjID = row[1]
                     code = row[2]
 
-                    if code == inputcode:
+                    if code == reginputcode:
                         try:
                             # open db connection
                             connection = sqlite3.connect(config.Server_Game_DB_Location)
                             cursor = connection.cursor()
 
-                            
-                            #find character ID
-                            #cursor.execute(f"SELECT id FROM characters WHERE char_name ='{log_character[0]}'")
-                            cursor.execute(f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =?", (log_character[0], ))
+                            # find character ID
+                            # cursor.execute(f"SELECT id FROM characters WHERE char_name ='{log_character[0]}'")
+                            cursor.execute(
+                                f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =?",
+                                (log_character[0],))
                             result_id = cursor.fetchone()
-                            #print(f"Character-ID: {result_id[0]}")
-                            #print(f"Character-Player-ID: {result_id[1]}")
-                            #print(f"Character-Name: {result_id[2]}")
-                            #print(f"Platform-ID: {result_id[3]}")
-                            
+                            # print(f"Character-ID: {result_id[0]}")
+                            # print(f"Character-Player-ID: {result_id[1]}")
+                            # print(f"Character-Name: {result_id[2]}")
+                            # print(f"Platform-ID: {result_id[3]}")
+
                             platformid = result_id[3]
 
                             cursor.close()
                             connection.close()
                             print(f"Setting discord ID to {discordID} for {platformid} - {result_id[2]}")
-                            dbCur.execute("UPDATE accounts SET discordid = ? WHERE conanplatformid = ?", (discordID, platformid))
+                            dbCur.execute("UPDATE accounts SET discordid = ? WHERE conanplatformid = ?",
+                                          (discordID, platformid))
                             dbCon.commit()
 
-                            #check if registration successful 
-                            dbCur.execute("Select discordid FROM accounts WHERE conanplatformid = ?", (platformid, ))
+                            # check if registration successful 
+                            dbCur.execute("Select discordid FROM accounts WHERE conanplatformid = ?", (platformid,))
                             checkResult = dbCur.fetchone()
-                            if checkResult == None:
+                            if checkResult is None:
                                 print("could not register user. Perhaps not in account list yet")
                             else:
-                                #delete registration code and send notify message
-                                dbCur.execute("INSERT INTO {server}_pendingDiscordMsg (message, messageType, destChannelID, sent) VALUES (?,?,?,?)".format(server=config.Server_Name), (f"{log_character[0]} registration confirmed!", 'DM', discordID, False))
-                                dbCur.execute("DELETE FROM registration_codes WHERE discordID = ?", (discordID, ))
+                                # delete registration code and send notify message
+                                dbCur.execute(
+                                    "INSERT INTO {server}_pendingDiscordMsg (message, messageType, destChannelID, sent) VALUES (?,?,?,?)".format(
+                                        server=config.Server_Name),
+                                    (f"{log_character[0]} registration confirmed!", 'DM', discordID, False))
+                                dbCur.execute("DELETE FROM registration_codes WHERE discordID = ?", (discordID,))
                                 dbCon.commit()
                         except Exception as e:
                             print(e)
@@ -170,47 +174,61 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
-                #find user
-                dbCur.execute("SELECT platformid FROM {server}_currentusers WHERE player=?".format(server=config.Server_Name), (player, ))
+                # find user
+                dbCur.execute(
+                    "SELECT platformid FROM {server}_currentusers WHERE player=?".format(server=config.Server_Name),
+                    (player,))
                 result = dbCur.fetchone()
-                if result == None:
+                if result is None:
                     print(f"{player} is not in the current users list cant send home")
                     return
                 else:
                     platformid = result[0]
 
-                    dbCur.execute("SELECT homelocation FROM {server}_homelocations WHERE platformid =?".format(server=config.Server_Name), (platformid, ))
+                    dbCur.execute("SELECT homelocation FROM {server}_homelocations WHERE platformid =?".format(
+                        server=config.Server_Name), (platformid,))
                     results = dbCur.fetchone()
-                    if results == None:
+                    if results is None:
                         print(f"{player} is not in the homelocations list cant send home")
                         return
                     else:
                         home = results[0]
                         print(f"{player} home location is {home}")
-                        #check if active event, arena, or vault
+                        # check if active event, arena, or vault
                         homeAllowed = False
-                        dbCur.execute("SELECT ID FROM {server}_event_details WHERE isActive =True AND HomeAllowed =True".format(server=config.Server_Name))
+                        dbCur.execute(
+                            "SELECT ID FROM {server}_event_details WHERE isActive =True AND HomeAllowed =True".format(
+                                server=config.Server_Name))
                         result = dbCur.fetchone()
-                        if result != None:
+                        if result is not None:
                             homeAllowed = True
-                        dbCur.execute("SELECT ID FROM {server}_arenas WHERE isActive =True AND HomeAllowed =True".format(server=config.Server_Name))
+                        dbCur.execute(
+                            "SELECT ID FROM {server}_arenas WHERE isActive =True AND HomeAllowed =True".format(
+                                server=config.Server_Name))
                         result = dbCur.fetchone()
-                        if result != None:
+                        if result is not None:
                             homeAllowed = True
-                        dbCur.execute("SELECT ID FROM {server}_vault_rentals WHERE inUse =True AND renterplatformid =?".format(server=config.Server_Name), (platformid, ))
+                        dbCur.execute(
+                            "SELECT ID FROM {server}_vault_rentals WHERE inUse =True AND renterplatformid =?".format(
+                                server=config.Server_Name), (platformid,))
                         result = dbCur.fetchone()
-                        if result != None:
+                        if result is not None:
                             homeAllowed = True
-                            dbCur.execute("UPDATE {server}_vault_rentals SET inUse =False WHERE renterplatformid =?".format(server=config.Server_Name), (platformid, ))
+                            dbCur.execute(
+                                "UPDATE {server}_vault_rentals SET inUse =False WHERE renterplatformid =?".format(
+                                    server=config.Server_Name), (platformid,))
                             dbCon.commit()
-                        if homeAllowed == True:
-                            dbCur.execute("INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) VALUES (?,?,?)".format(server=config.Server_Name), (player, home, platformid))
+                        if homeAllowed is True:
+                            dbCur.execute(
+                                "INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) VALUES (?,?,?)".format(
+                                    server=config.Server_Name), (player, home, platformid))
                             dbCon.commit()
                             discord_message(f"{player} has been sent home")
                         else:
                             print(f"{player} is not allowed to teleport home")
                             discord_message(f"{player} tried to teleport home but is not allowed to do so")
                 dbCon.close()
+
             def RegisterHomeLocation(player):
                 try:
                     dbCon = mariadb.connect(
@@ -225,39 +243,48 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
-                #get player's current location
+                # get player's current location
                 # open db connection
                 connection = sqlite3.connect(config.Server_Game_DB_Location)
                 cursor = connection.cursor()
-                
-                #find character ID
-                cursor.execute(f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'", (log_character[0], ))
+
+                # find character ID
+                cursor.execute(
+                    f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'",
+                    (log_character[0],))
                 result_id = cursor.fetchone()
 
                 platformid = result_id[3]
-                
-                #find XYZ of character
-                cursor.execute(f"select (X || ' ' || Y || ' ' || Z) as XYZ FROM actor_position WHERE id ={result_id[0]}")
+
+                # find XYZ of character
+                cursor.execute(
+                    f"select (X || ' ' || Y || ' ' || Z) as XYZ FROM actor_position WHERE id ={result_id[0]}")
                 location = cursor.fetchone()[0]
 
-                #find user in current users
-                dbCur.execute("SELECT platformid FROM {server}_currentusers WHERE player=?".format(server=config.Server_Name), (player, ))
+                # find user in current users
+                dbCur.execute(
+                    "SELECT platformid FROM {server}_currentusers WHERE player=?".format(server=config.Server_Name),
+                    (player,))
                 result = dbCur.fetchone()
-                if result == None:
+                if result is None:
                     print(f"{player} is not in the current users list cant register home")
                     return
                 else:
                     platformid = result[0]
 
-                    dbCur.execute("SELECT homelocation FROM {server}_homelocations WHERE platformid =?".format(server=config.Server_Name), (platformid, ))
+                    dbCur.execute("SELECT homelocation FROM {server}_homelocations WHERE platformid =?".format(
+                        server=config.Server_Name), (platformid,))
                     results = dbCur.fetchone()
-                    if results == None:
+                    if results is None:
                         print(f"{player} is not in the homelocations creating a new location")
-                        dbCur.execute("INSERT INTO {server}_homelocations (player, homelocation, platformid) VALUES (?,?,?)".format(server=config.Server_Name), (player, location, platformid))
+                        dbCur.execute(
+                            "INSERT INTO {server}_homelocations (player, homelocation, platformid) VALUES (?,?,?)".format(
+                                server=config.Server_Name), (player, location, platformid))
                         dbCon.commit()
                         discord_message(f"{player} registered their home location as {location}")
                     else:
-                        dbCur.execute("UPDATE {server}_homelocations SET homelocation =? WHERE platformid =?".format(server=config.Server_Name), (location, platformid))
+                        dbCur.execute("UPDATE {server}_homelocations SET homelocation =? WHERE platformid =?".format(
+                            server=config.Server_Name), (location, platformid))
                         dbCon.commit()
                         discord_message(f"{player} updated their home location to {location}")
                 dbCon.close()
@@ -276,44 +303,52 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
-                #get player's current location
+                # get player's current location
                 # open db connection
                 connection = sqlite3.connect(config.Server_Game_DB_Location)
                 cursor = connection.cursor()
-                
-                #find character ID
-                cursor.execute(f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'", (log_character[0], ))
+
+                # find character ID
+                cursor.execute(
+                    f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'",
+                    (log_character[0],))
                 result_id = cursor.fetchone()
 
                 platformid = result_id[3]
-                
-                #find XYZ of character
-                cursor.execute(f"select (X || ' ' || Y || ' ' || Z) as XYZ FROM actor_position WHERE id ={result_id[0]}")
+
+                # find XYZ of character
+                cursor.execute(
+                    f"select (X || ' ' || Y || ' ' || Z) as XYZ FROM actor_position WHERE id ={result_id[0]}")
                 location = cursor.fetchone()[0]
 
-                #find user in current users
-                dbCur.execute("SELECT platformid FROM {server}_currentusers WHERE player=?".format(server=config.Server_Name), (player, ))
+                # find user in current users
+                dbCur.execute(
+                    "SELECT platformid FROM {server}_currentusers WHERE player=?".format(server=config.Server_Name),
+                    (player,))
                 result = dbCur.fetchone()
-                if result == None:
+                if result is None:
                     print(f"{player} is not in the current users list cant register home")
                     return
                 else:
                     platformid = result[0]
-                    #get event general location
-                    dbCur.execute("SELECT {location} FROM {server}_event_details WHERE isActive =True".format(location=teleTarget,server=config.Server_Name))
+                    # get event general location
+                    dbCur.execute(
+                        "SELECT {location} FROM {server}_event_details WHERE isActive =True".format(location=teleTarget,
+                                                                                                    server=config.Server_Name))
                     result = dbCur.fetchone()
-                    if result == None:
+                    if result is None:
                         print(f"No active event found")
                     else:
-                        dbCur.execute("INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) VALUES (?,?,?)".format(server=config.Server_Name), (player, result[0], platformid))
+                        dbCur.execute(
+                            "INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) VALUES (?,?,?)".format(
+                                server=config.Server_Name), (player, result[0], platformid))
                         dbCon.commit()
                         discord_message(f"{player} has been sent to the event {teleTarget}")
                 dbCon.close()
 
-
             while True:
                 try:
-                    
+
                     temp_player = ""
 
                     # open logfile
@@ -325,7 +360,7 @@ def game_log_watcher():
 
                     # read logfile line
                     for line in read_log(logfile):
-                        #check if we need to exit
+                        # check if we need to exit
                         if os.path.exists('..\\restart'):
                             os._exit(0)
                         # detect Chatmessages
@@ -342,19 +377,19 @@ def game_log_watcher():
                             discord_message(msg)
 
                             print(f"Chat: {log_character[0]} ({log_text[0]})")
-                        
+
                             # detect registration requests
                             if "!register " in log_text[0]:
                                 inputcode = log_text[0]
-                                inputcode = inputcode.strip("!register ")  
-                                register(inputcode)  
+                                inputcode = inputcode.strip("!register ")
+                                register(inputcode)
                             if log_text[0] == "!beammeup":
                                 print(log_text[0])
                                 print(f"Teleport request received by: {log_character[0]} ({log_text[0]})")
                                 teleTarget = "GeneralLocation"
                                 teleportToEvent(teleTarget, log_character[0])
-                        
-                            if log_text[0] ==  "!redteam":
+
+                            if log_text[0] == "!redteam":
                                 print(f"Teleport request received by: {log_character[0]} ({log_text[0]})")
                                 teleTarget = "RedTeamLocation"
                                 teleportToEvent(teleTarget, log_character[0])
@@ -370,15 +405,15 @@ def game_log_watcher():
                                 teleportToEvent(teleTarget, log_character[0])
 
                             # detect home request
-                            if log_text[0] ==  "!home":
+                            if log_text[0] == "!home":
                                 print(f"Teleport request received by: {log_character[0]} ({log_text[0]})")
                                 TeleportHome(log_character[0])
 
                             # detect home location registration
                             if log_text[0] == "!registerhome":
-                                print(f"Request to register/update home location received by: {log_character[0]} ({log_text[0]})")
+                                print(
+                                    f"Request to register/update home location received by: {log_character[0]} ({log_text[0]})")
                                 RegisterHomeLocation(log_character[0])
-
 
                         # detect Error
                         if "Error: Unhandled Exception:" in line:
@@ -402,7 +437,7 @@ def game_log_watcher():
                             log_time = convert_time(log_time[0])
 
                             # send msg to discord
-                            msg = (f"{log_time} :o2: Engine shutdown")
+                            msg = f"{log_time} :o2: Engine shutdown"
                             discord_message(msg)
 
                             print(f"Engine shutdown")
@@ -415,7 +450,7 @@ def game_log_watcher():
                             log_time = convert_time(log_time[0])
 
                             # send msg to discord
-                            msg = (f"{log_time} :white_check_mark: Engine loaded")
+                            msg = f"{log_time} :white_check_mark: Engine loaded"
                             discord_message(msg)
 
                             print(f"Engine loaded")
@@ -433,7 +468,7 @@ def game_log_watcher():
                             log_time = convert_time(log_time[0])
 
                             # send msg to discord
-                            msg = (f"{log_time} :new: {log_character[0]}")
+                            msg = f"{log_time} :new: {log_character[0]}"
                             discord_message(msg)
 
                             print(f"New: {log_character[0]}")
@@ -453,25 +488,26 @@ def game_log_watcher():
                                 log_time = convert_time(log_time[0])
 
                                 # send msg to discord
-                                msg = (f"{log_time} :green_square: {log_character[0]} (SteamID: {log_steamid[0]} | IP: {log_ip[0]})")
+                                msg = (
+                                    f"{log_time} :green_square: {log_character[0]} (SteamID: {log_steamid[0]} | IP: {log_ip[0]})")
                                 discord_message(msg)
 
                                 # save to sqlite database
-                                save_log(["connection", "connect", log_character[0], log_steamid[0], log_ip[0], log_time])
+                                save_log(
+                                    ["connection", "connect", log_character[0], log_steamid[0], log_ip[0], log_time])
 
                                 print(f"Connect: {log_character[0]} ({log_steamid[0]} | {log_ip[0]})")
 
                         # detect Disconnect
                         if " disconnected" in line:
                             log_time = re.findall("\[(.*?)\]", line)
-                            log_character = re.findall("(?<=Player #[0-9] )(.*)(?= disconnected)", line)
+                            log_character = re.findall("(?<=Player #\d )(.*)(?= disconnected)", line)
 
                             if len(log_character) == 0:
-                                log_character = re.findall("(?<=Player #[0-9][0-9] )(.*)(?= disconnected)", line)
+                                log_character = re.findall("(?<=Player #\d\d )(.*)(?= disconnected)", line)
                             if len(log_character) == 0:
-                                log_character = re.findall("(?<=Player #[0-9][0-9][0-9] )(.*)(?= disconnected)", line)
+                                log_character = re.findall("(?<=Player #\d\d\d )(.*)(?= disconnected)", line)
                             if not len(log_character) == 0:
-
                                 # convert datetime
                                 log_time = convert_time(log_time[0])
 
@@ -506,9 +542,9 @@ def game_log_watcher():
                                 cursor.execute(f"SELECT char_name FROM characters WHERE id ={log_clanid[0]}")
                                 result_player = cursor.fetchone()
 
-                                if not result_clan == None:
+                                if not result_clan is None:
                                     log_name = result_clan[0]
-                                if not result_player == None:
+                                if not result_player is None:
                                     log_name = result_player[0]
 
                                 # close db connection
@@ -521,7 +557,8 @@ def game_log_watcher():
                                 pass
 
                             # send msg to discord
-                            msg = (f"{log_time} :crossed_swords: {log_name}, {log_wave[0]} (X: {log_x[0]} | Y: {log_y[0]})")
+                            msg = (
+                                f"{log_time} :crossed_swords: {log_name}, {log_wave[0]} (X: {log_x[0]} | Y: {log_y[0]})")
                             discord_message(msg)
 
                             print(f"Purge Started: {log_name} - {log_wave[0]} (X: {log_x[0]} | Y: {log_y[0]})")
@@ -546,9 +583,9 @@ def game_log_watcher():
                                 sqlite3_cursor.execute(f"SELECT char_name FROM characters WHERE id ={log_clanid[0]}")
                                 result_player = sqlite3_cursor.fetchone()
 
-                                if not result_clan == None:
+                                if not result_clan is None:
                                     log_name = result_clan[0]
-                                if not result_player == None:
+                                if not result_player is None:
                                     log_name = result_player[0]
 
                                 # close db connection
@@ -561,7 +598,7 @@ def game_log_watcher():
                                 pass
 
                             # send msg to discord
-                            msg = (f"{log_time} :crossed_swords: {log_name} ({log_reason[0]})")
+                            msg = f"{log_time} :crossed_swords: {log_name} ({log_reason[0]})"
                             discord_message(msg)
 
                             print(f"Purge Failed: {log_name} ({log_reason[0]})")

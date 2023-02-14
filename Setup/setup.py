@@ -1,12 +1,12 @@
 import mariadb
-import configparser
 import sys
 from datetime import datetime
 import sqlite3
-# add Modules folder to system path
-sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 import config
+# add Modules folder to system path
+sys.path.insert(0, '..\\Modules')
+
 
 def connect_mariadb():
     global mariaCon
@@ -508,12 +508,15 @@ if __name__ == '__main__':
     """
 
     # Add tables to the table list
-    tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,server_pendingDiscordMsg,
-                 shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers, server_jail_info, server_offenders,
+    tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,
+                 server_pendingDiscordMsg,
+                 shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers,
+                 server_jail_info, server_offenders,
                  server_protected_areas, server_recent_pvp, server_bans, server_buffs, server_vault_rentals,
                  server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
                  server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,
-                 server_activeTeleports, server_event_details, server_insults, server_teleport_requests, server_building_piece_tracking, server_inventory_tracking]
+                 server_activeTeleports, server_event_details, server_insults, server_teleport_requests,
+                 server_building_piece_tracking, server_inventory_tracking]
 
     # Attempt to execute the create table queries
     print("Creating tables if they don't exist...")
@@ -567,9 +570,7 @@ if __name__ == '__main__':
                     Prison_max_y
                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
-
-
-            mariaCur.execute(server_info,(
+            mariaCur.execute(server_info, (
                 config.Server_Name,
                 True,
                 True,
@@ -603,7 +604,7 @@ if __name__ == '__main__':
                 config.Server_Prison_min_y,
                 config.Server_Prison_max_x,
                 config.Server_Prison_max_y
-                ))
+            ))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -611,18 +612,29 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    
     try:
         mariaCur.execute("SELECT * FROM privileged_roles")
         roles = mariaCur.fetchall()
-        if len(roles) == 0 or roles == None:
+        if len(roles) == 0 or roles is None:
             print("Creating privileged roles")
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Admin', ?, '10', True)",(config.PrivilegedRoles_Admin,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Moderator', ?, '5', True)",(config.PrivilegedRoles_Moderator,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP4', ?, '5', False)",(config.PrivilegedRoles_VIP4,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP3', ?, '4', False)",(config.PrivilegedRoles_VIP3,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP2', ?, '3', False)",(config.PrivilegedRoles_VIP2,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '2', False)",(config.PrivilegedRoles_VIP1,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Admin', ?, '10', True)",
+                (config.PrivilegedRoles_Admin,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Moderator', ?, '5', True)",
+                (config.PrivilegedRoles_Moderator,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP4', ?, '5', False)",
+                (config.PrivilegedRoles_VIP4,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP3', ?, '4', False)",
+                (config.PrivilegedRoles_VIP3,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP2', ?, '3', False)",
+                (config.PrivilegedRoles_VIP2,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '2', False)",
+                (config.PrivilegedRoles_VIP1,))
         mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -630,16 +642,28 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo server buffs
+    # setup demo server buffs
     try:
         mariaCur.execute("SELECT * FROM server_buffs")
         buffs = mariaCur.fetchall()
-        if len(buffs) == 0 or buffs == None:
+        if len(buffs) == 0 or buffs is None:
             print("Inserting demo server buffs...")
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double Harvest', False, ?, 'setserversetting harvestamountmultiplier 6.0', 'setserversetting harvestamountmultiplier 3.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))  
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Thrall Conversion', False, ?, 'setserversetting ThrallConversionMultiplier 0.25', 'setserversetting ThrallConversionMultiplier 0.5', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Crafting Speeds', False, ?, 'setserversetting ItemConvertionMultiplier 0.1', 'setserversetting ItemConvertionMultiplier 0.3', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) "
+                "VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) "
+                "VALUES ('Double Harvest', False, ?, 'setserversetting harvestamountmultiplier 6.0', 'setserversetting harvestamountmultiplier 3.0', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) "
+                "VALUES ('Faster Thrall Conversion', False, ?, 'setserversetting ThrallConversionMultiplier 0.25', 'setserversetting ThrallConversionMultiplier 0.5', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) "
+                "VALUES ('Faster Crafting Speeds', False, ?, 'setserversetting ItemConvertionMultiplier 0.1', 'setserversetting ItemConvertionMultiplier 0.3', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -647,11 +671,11 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo shop items
+    # setup demo shop items
     try:
         mariaCur.execute("SELECT * FROM shop_items")
         items = mariaCur.fetchall()
-        if len(items) == 0 or items == None:
+        if len(items) == 0 or items is None:
             print("Inserting demo shop items")
             si = open('..\\Setup\\shop_items.sql', 'r')
             sqlFile = si.read().replace('{server}', config.Server_Name)
@@ -666,11 +690,11 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo shop kits
+    # setup demo shop kits
     try:
         mariaCur.execute("SELECT * FROM shop_kits")
         items = mariaCur.fetchall()
-        if len(items) == 0 or items == None:
+        if len(items) == 0 or items is None:
             print("Inserting demo shop kits")
             sk = open('..\\Setup\\shop_kits.sql', 'r')
             sqlFile = sk.read()
@@ -685,13 +709,13 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo protected areas (kills = jail)
+    # setup demo protected areas (kills = jail)
     try:
         mariaCur.execute("SELECT * FROM {server}_protected_areas".format(server=config.Server_Name))
         areas = mariaCur.fetchall()
-        if len(areas) == 0 or areas == None:
+        if len(areas) == 0 or areas is None:
             print("Inserting demo protected areas")
-            #import protected areas sql file
+            # import protected areas sql file
             pa = open('..\\Setup\\protectedareas.sql', 'r')
             sqlFile = pa.read().replace('{server}', config.Server_Name)
             pa.close()
@@ -705,13 +729,13 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo vault locations for rent
+    # setup demo vault locations for rent
     try:
         mariaCur.execute("SELECT * FROM {server}_vault_rentals".format(server=config.Server_Name))
         areas = mariaCur.fetchall()
-        if len(areas) == 0 or areas == None:
+        if len(areas) == 0 or areas is None:
             print("Inserting vault protected areas")
-            #import protected areas sql file
+            # import protected areas sql file
             va = open('..\\Setup\\vault_locations.sql', 'r')
             sqlFile = va.read().replace('{server}', config.Server_Name)
             va.close()
@@ -725,11 +749,11 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo jail info
+    # setup demo jail info
     try:
         mariaCur.execute("SELECT * FROM {server}_jail_info".format(server=config.Server_Name))
         cells = mariaCur.fetchall()
-        if len(cells) == 0 or cells== None:
+        if len(cells) == 0 or cells is None:
             print("Inserting demo shop jail cell info")
             ji = open('..\\Setup\\jail_info.sql', 'r')
             sqlFile = ji.read().replace('{server}', config.Server_Name)
@@ -744,8 +768,8 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup pvp leaderboards
-    try:     
+    # setup pvp leaderboards
+    try:
         lv = open('..\\Setup\\create_PVP_views.sql', 'r')
         sqlFile = lv.read().replace('{server}', config.Server_Name)
         lv.close()
@@ -758,8 +782,8 @@ if __name__ == '__main__':
             pass
         else:
             print(f"Error: {e}")
-    
-    #setup custom views
+
+    # setup custom views
     try:
         cv = open('..\\Setup\\CustomViews.sql', 'r')
         sqlFile = cv.read().replace('{server}', config.Server_Name)
