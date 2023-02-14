@@ -1,0 +1,27 @@
+INFO 1676414279.3878436 (503) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L47 - IGBOT Started
+INFO 1676414279.3888438 (504) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L51 - Setting up bot DB info...
+INFO 1676414279.4228446 (538) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L53 - Setup complete
+INFO 1676414279.4228446 (538) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L67 - Starting bot modules
+INFO 1676414279.4338446 (549) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L72 - Bot started at: 2023-02-14 17:37:59.432845
+INFO 1676414279.4338446 (549) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L74 - Bot will reboot at: 2023-02-14 17:52:59.432845
+INFO 1676414279.442846 (558) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L93 - Killlog started
+INFO 1676414279.4438465 (560) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L101 - Killlog is still running
+INFO 1676414279.4468439 (562) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L114 - Discord handler started
+INFO 1676414279.4468439 (562) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L122 - Discord Handler is still running
+INFO 1676414279.4508455 (566) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L135 - User Sync started
+INFO 1676414279.4508455 (566) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L143 - User Sync is still running
+INFO 1676414279.4538443 (569) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L156 - Game Log Watcher started
+INFO 1676414279.4538443 (569) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L164 - Game Log Watcher is still running
+INFO 1676414279.4578445 (573) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L177 - Account Payroll started
+INFO 1676414279.4588459 (574) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L185 - Account Payroll is still running
+INFO 1676414279.462846 (578) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L198 - Order Processing started
+INFO 1676414279.462846 (578) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L206 - Order Processing is still running
+INFO 1676414279.4668458 (582) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L219 - Map Maker started
+INFO 1676414279.4678485 (584) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L227 - Map Maker Process is still running
+INFO 1676414279.4708452 (586) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L240 - Game DB Watcher started
+INFO 1676414279.4718451 (587) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L248 - Game DB Watcher is still running
+INFO 1676414279.4748454 (590) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L261 - Teleporter Watcher started
+INFO 1676414279.4758482 (592) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L269 - Teleporter Watcher is still running
+INFO 1676414279.4788463 (595) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L282 - Server Settings Watcher started
+INFO 1676414279.479848 (596) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L290 - Server Settings Watcher is still running
+INFO 1676414279.479848 (596) 	 C:\Users\mdrai\Documents\Projects\Conan\IG_Bot\PrimaryBot\IGBot.py F<module> L300 - Checking karma status

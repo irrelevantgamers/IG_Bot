@@ -9,20 +9,20 @@ import os
 # setup logging
 import logging
 from logging.handlers import RotatingFileHandler
-import config
-from Modules.killlog import kill_stream
-from Modules.discordhandler import discord_bot
-from Modules.usersync import runSync
-from Modules.game_log_watcher import game_log_watcher
-from Modules.accountpayroll import pay_users
-from Modules.orderprocessing import processOrderLoop
-from Modules.mapmaker import create_conan_maps
-from Modules.game_db_watcher import watch_game_db
-from Modules.teleporter import TeleportRequestWatcher, CancelAllTeleportRequests
-from Modules.serversettingswatcher import WatchForServerSettings
-
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
+import config
+from killlog import kill_stream
+from discordhandler import discord_bot
+from usersync import runSync
+from game_log_watcher import game_log_watcher
+from accountpayroll import pay_users
+from orderprocessing import processOrderLoop
+from mapmaker import create_conan_maps
+from game_db_watcher import watch_game_db
+from teleporter import TeleportRequestWatcher, CancelAllTeleportRequests
+from serversettingswatcher import WatchForServerSettings
+
 
 if __name__ == "__main__":
     # create logger
