@@ -2,10 +2,13 @@ import mariadb
 import configparser
 import sys
 from datetime import datetime
+import sqlite3
+
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 import config
+
 
 def connect_mariadb():
     global mariaCon
@@ -127,6 +130,10 @@ if __name__ == '__main__':
             Event_Channel           				CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the events to',
             Map_Url                                 CHAR(255) NOT NULL 					COMMENT 'URL to the public map page',
             Prison_Exit_Coordinates                 CHAR(255) NOT NULL 					COMMENT 'Coordinates of the prison exit',
+            Prison_min_x                            INT DEFAULT '0'						COMMENT 'Minimum X coordinate of the prison',
+            Prison_min_y                            INT DEFAULT '0'						COMMENT 'Minimum Y coordinate of the prison',
+            Prison_max_x                            INT DEFAULT '0'	 					COMMENT 'Maximum X coordinate of the prison',
+            Prison_max_y                            INT DEFAULT '0'	 					COMMENT 'Maximum Y coordinate of the prison',
             lastCheckIn                             DATETIME DEFAULT CURRENT_TIMESTAMP	COMMENT 'Date and time of when the server last checked in',
             lastUserSync                            DATETIME DEFAULT 0              	COMMENT 'Date and time of when the server last synced users',
             PRIMARY KEY (ID)
@@ -308,16 +315,16 @@ if __name__ == '__main__':
     server_vault_rentals = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_vault_rentals (
             id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the vault_rentals Table',
-            vaultname            CHAR(100) NOT NULL COMMENT 'Name of the vault',
-            renterDiscordID CHAR(100) NOT NULL COMMENT 'Discord ID of the player who rented the vault',
-            renterPlatformID CHAR(100) NOT NULL COMMENT 'Funcom Platform ID of the player who rented the vault',
-            renterClanName  CHAR(100) NOT NULL COMMENT 'Clan name of the player who rented the vault',
-            renterClanID    CHAR(100) NOT NULL COMMENT 'Funcom Clan ID of the player who rented the vault',
-            rentTime        DATETIME NOT NULL COMMENT 'Date and time of when the vault was rented',
-            rentedUntil     DATETIME NOT NULL COMMENT 'Date and time of when the vault will be rented until',
-            lastAccessed    DATETIME NOT NULL COMMENT 'Date and time of when the vault was last accessed',
-            inUse           BOOL NOT NULL COMMENT 'If the vault is in use',
-            location        CHAR(100) NOT NULL COMMENT 'Location of the vault',
+            vaultname       CHAR(100) NOT NULL   COMMENT 'Name of the vault',
+            renterDiscordID CHAR(100)            COMMENT 'Discord ID of the player who rented the vault',
+            renterPlatformID CHAR(100)           COMMENT 'Funcom Platform ID of the player who rented the vault',
+            renterClanName  CHAR(100)            COMMENT 'Clan name of the player who rented the vault',
+            renterClanID    CHAR(100)            COMMENT 'Funcom Clan ID of the player who rented the vault',
+            rentTime        DATETIME             COMMENT 'Date and time of when the vault was rented',
+            rentedUntil     DATETIME             COMMENT 'Date and time of when the vault will be rented until',
+            lastAccessed    DATETIME             COMMENT 'Date and time of when the vault was last accessed',
+            inUse           BOOL DEFAULT '0'     COMMENT 'If the vault is in use',
+            location        CHAR(100) NOT NULL   COMMENT 'Location of the vault',
             PRIMARY KEY (id)
             );
     """
@@ -470,16 +477,20 @@ if __name__ == '__main__':
             );
     """
 
-    server_teleportLog = f"""
-        CREATE TABLE IF NOT EXISTS {config.Server_Name}_teleportLog (
-            conid           CHAR(100) NOT NULL COMMENT 'conan ID of the player',
-            player          CHAR(100) NOT NULL COMMENT 'Name of the player',
-            srcLocation     CHAR(100) NOT NULL COMMENT 'Source location of the player',
-            dstLocation     CHAR(100) NOT NULL COMMENT 'Destination location of the player',
-            platformid      CHAR(100) NOT NULL UNIQUE COMMENT 'Funcom Platform ID of the player',
-            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time of when the player was loaded'
+    server_teleport_requests = f"""
+        CREATE TABLE IF NOT EXISTS {config.Server_Name}_teleport_requests (
+            id              MEDIUMINT NOT NULL AUTO_INCREMENT COMMENT 'Primary KEY for the teleport_requests Table',
+            player          CHAR(100) NOT NULL                      COMMENT 'Name of the player',
+            dstLocation     CHAR(100) NOT NULL                      COMMENT 'Destination location of the player',
+            platformid      CHAR(100) NOT NULL                      COMMENT 'Funcom Platform ID of the player',
+            loadDate        DATETIME DEFAULT CURRENT_TIMESTAMP      COMMENT 'Date and time of when the request was loaded',
+            completed       BOOL DEFAULT '0'                        COMMENT 'If the request was completed',
+            attempts        MEDIUMINT DEFAULT '0'                   COMMENT 'Number of attempts to complete the request',
+            lastAttempt     DATETIME DEFAULT CURRENT_TIMESTAMP      COMMENT 'Date and time of the last attempt to complete the request',
+            PRIMARY KEY (id)
             );
     """
+
     server_building_piece_tracking = f"""
         CREATE TABLE IF NOT EXISTS {config.Server_Name}_building_piece_tracking (
             clan_id         MEDIUMINT NOT NULL COMMENT 'Clan ID of the player',
@@ -499,12 +510,15 @@ if __name__ == '__main__':
     """
 
     # Add tables to the table list
-    tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,server_pendingDiscordMsg,
-                 shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers, server_jail_info, server_offenders,
+    tableList = [accounts, order_processing, registration_codes, servers, server_events, shop_items,
+                 server_pendingDiscordMsg,
+                 shop_log, shop_kits, shop_log, privileged_roles, server_currentusers, server_historicalusers,
+                 server_jail_info, server_offenders,
                  server_protected_areas, server_recent_pvp, server_bans, server_buffs, server_vault_rentals,
                  server_wanted_players, server_kill_log, server_ArenaParticipants, server_ArenaParticipants_stats,
                  server_ArenaPrize_pool, server_ArenaPrizes, server_Arenas, server_homelocations,
-                 server_activeTeleports, server_event_details, server_insults, server_teleportLog, server_building_piece_tracking, server_inventory_tracking]
+                 server_activeTeleports, server_event_details, server_insults, server_teleport_requests,
+                 server_building_piece_tracking, server_inventory_tracking]
 
     # Attempt to execute the create table queries
     print("Creating tables if they don't exist...")
@@ -551,12 +565,13 @@ if __name__ == '__main__':
                     VaultRental_Channel,
                     Event_Channel,
                     Map_URL,
-                    Prison_Exit_Coordinates
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
-
-
-
-            mariaCur.execute(server_info,(
+                    Prison_Exit_Coordinates,
+                    Prison_min_x,
+                    Prison_min_y,
+                    Prison_max_x,
+                    Prison_max_y
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+            mariaCur.execute(server_info, (
                 config.Server_Name,
                 True,
                 True,
@@ -585,7 +600,12 @@ if __name__ == '__main__':
                 config.Discord_VaultRental_Channel,
                 config.Discord_Event_Channel,
                 config.Server_Map_Url,
-                config.Server_Prison_Exit_Coordinates))
+                config.Server_Prison_Exit_Coordinates,
+                config.Server_Prison_min_x,
+                config.Server_Prison_min_y,
+                config.Server_Prison_max_x,
+                config.Server_Prison_max_y
+            ))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -593,19 +613,197 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    
+    # Attempt to create the Underworld server information
+    print("Creating server info if it doesn't exist...")
+    try:
+        mariaCur.execute("SELECT * FROM servers WHERE id = ?", (config.ServerUnderwold_Name,))
+        server_info = mariaCur.fetchone()
+        if server_info is None or len(server_info) == 0:
+            server_info = """
+                INSERT INTO servers (
+                    serverName, 				          
+                    enabled, 				          
+                    dedicated,			          
+                    rcon_host, 				          
+                    rcon_port,	 			          
+                    rcon_pass, 				          
+                    steamQueryPort, 			          
+                    databaseLocation,		          
+                    logLocation,
+                    ServerLog_Channel,				          
+                    Killlog_Channel,           
+                    Solo_LeaderBoardAll_Channel,
+                    Solo_LeaderBoard1Day_Channel,		  
+                    Solo_LeaderBoard7Day_Channel,	
+                    Solo_LeaderBoard30Day_Channel,	
+                    Clan_LeaderBoardAll_Channel,
+                    Clan_LeaderBoard1Day_Channel,		
+                    Clan_LeaderBoard7Day_Channel,	
+                    Clan_LeaderBoard30Day_Channel,	
+                    BuildingPieceTracking_Channel,	
+                    InventoryPieceTracking_Channel,	
+                    Wanted_Channel,              	
+                    Jail_Channel,             		
+                    Items_for_Sale_Channel,            
+                    ServerBuffs_Channel,            	
+                    VaultRental_Channel,
+                    Event_Channel,
+                    Map_URL,
+                    Prison_Exit_Coordinates,
+                    Prison_min_x,
+                    Prison_min_y,
+                    Prison_max_x,
+                    Prison_max_y
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+            mariaCur.execute(server_info, (
+                config.ServerUnderwold_Name,
+                True,
+                True,
+                config.ServerUnderwold_RCON_Host,
+                config.ServerUnderwold_RCON_Port,
+                config.ServerUnderwold_RCON_Pass,
+                config.ServerUnderwold_SteamQuery_Port,
+                config.ServerUnderwold_Game_DB_Location,
+                config.ServerUnderwold_Game_Log_Location,
+                config.Discord_ServerLog_Channel,
+                config.Discord_Killlog_Channel,
+                config.Discord_Solo_LeaderBoardAll_Channel,
+                config.Discord_Solo_LeaderBoard1Day_Channel,
+                config.Discord_Solo_LeaderBoard7Day_Channel,
+                config.Discord_Solo_LeaderBoard30Day_Channel,
+                config.Discord_Clan_LeaderBoardAll_Channel,
+                config.Discord_Clan_LeaderBoard1Day_Channel,
+                config.Discord_Clan_LeaderBoard7Day_Channel,
+                config.Discord_Clan_LeaderBoard30Day_Channel,
+                config.Discord_BuildingPieceTracking_Channel,
+                config.Discord_InventoryPieceTracking_Channel,
+                config.Discord_Wanted_Channel,
+                config.Discord_Jail_Channel,
+                config.Discord_Items_for_Sale_Channel,
+                config.Discord_ServerBuffs_Channel,
+                config.Discord_VaultRental_Channel,
+                config.Discord_Event_Channel,
+                config.ServerUnderwold_Map_Url,
+                config.ServerUnderwold_Prison_Exit_Coordinates,
+                config.ServerUnderwold_Prison_min_x,
+                config.ServerUnderwold_Prison_min_y,
+                config.ServerUnderwold_Prison_max_x,
+                config.ServerUnderwold_Prison_max_y
+            ))
+            mariaCon.commit()
+    except mariadb.Error as e:
+        if "Duplicate entry" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
+
+    # Attempt to create the Stygia server information
+    print("Creating server info if it doesn't exist...")
+    try:
+        mariaCur.execute("SELECT * FROM servers WHERE id = ?", (config.ServerStygia_Name,))
+        server_info = mariaCur.fetchone()
+        if server_info is None or len(server_info) == 0:
+            server_info = """
+                INSERT INTO servers (
+                    serverName, 				          
+                    enabled, 				          
+                    dedicated,			          
+                    rcon_host, 				          
+                    rcon_port,	 			          
+                    rcon_pass, 				          
+                    steamQueryPort, 			          
+                    databaseLocation,		          
+                    logLocation,
+                    ServerLog_Channel,				          
+                    Killlog_Channel,           
+                    Solo_LeaderBoardAll_Channel,
+                    Solo_LeaderBoard1Day_Channel,		  
+                    Solo_LeaderBoard7Day_Channel,	
+                    Solo_LeaderBoard30Day_Channel,	
+                    Clan_LeaderBoardAll_Channel,
+                    Clan_LeaderBoard1Day_Channel,		
+                    Clan_LeaderBoard7Day_Channel,	
+                    Clan_LeaderBoard30Day_Channel,	
+                    BuildingPieceTracking_Channel,	
+                    InventoryPieceTracking_Channel,	
+                    Wanted_Channel,              	
+                    Jail_Channel,             		
+                    Items_for_Sale_Channel,            
+                    ServerBuffs_Channel,            	
+                    VaultRental_Channel,
+                    Event_Channel,
+                    Map_URL,
+                    Prison_Exit_Coordinates,
+                    Prison_min_x,
+                    Prison_min_y,
+                    Prison_max_x,
+                    Prison_max_y
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+            mariaCur.execute(server_info, (
+                config.ServerStygia_Name,
+                True,
+                True,
+                config.ServerStygia_RCON_Host,
+                config.ServerStygia_RCON_Port,
+                config.ServerStygia_RCON_Pass,
+                config.ServerStygia_SteamQuery_Port,
+                config.ServerStygia_Game_DB_Location,
+                config.ServerStygia_Game_Log_Location,
+                config.Discord_ServerLog_Channel,
+                config.Discord_Killlog_Channel,
+                config.Discord_Solo_LeaderBoardAll_Channel,
+                config.Discord_Solo_LeaderBoard1Day_Channel,
+                config.Discord_Solo_LeaderBoard7Day_Channel,
+                config.Discord_Solo_LeaderBoard30Day_Channel,
+                config.Discord_Clan_LeaderBoardAll_Channel,
+                config.Discord_Clan_LeaderBoard1Day_Channel,
+                config.Discord_Clan_LeaderBoard7Day_Channel,
+                config.Discord_Clan_LeaderBoard30Day_Channel,
+                config.Discord_BuildingPieceTracking_Channel,
+                config.Discord_InventoryPieceTracking_Channel,
+                config.Discord_Wanted_Channel,
+                config.Discord_Jail_Channel,
+                config.Discord_Items_for_Sale_Channel,
+                config.Discord_ServerBuffs_Channel,
+                config.Discord_VaultRental_Channel,
+                config.Discord_Event_Channel,
+                config.ServerStygia_Map_Url,
+                config.ServerStygia_Prison_Exit_Coordinates,
+                config.ServerStygia_Prison_min_x,
+                config.ServerStygia_Prison_min_y,
+                config.ServerStygia_Prison_max_x,
+                config.ServerStygia_Prison_max_y
+            ))
+            mariaCon.commit()
+    except mariadb.Error as e:
+        if "Duplicate entry" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
+
     try:
         mariaCur.execute("SELECT * FROM privileged_roles")
         roles = mariaCur.fetchall()
         if len(roles) == 0 or roles == None:
             print("Creating privileged roles")
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Admin', ?, '10', True)",(config.PrivilegedRoles_Admin,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Moderator', ?, '5', True)",(config.PrivilegedRoles_Moderator,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP4', ?, '5', False)",(config.PrivilegedRoles_VIP4,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP3', ?, '4', False)",(config.PrivilegedRoles_VIP3,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP2', ?, '3', False)",(config.PrivilegedRoles_VIP2,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '2', False)",(config.PrivilegedRoles_VIP1,))
-            mariaCur.execute("INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('StandardUser', ?, '1', False)",(config.PrivilegedRoles_StandardUser,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Admin', ?, '10', True)",
+                (config.PrivilegedRoles_Admin,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('Moderator', ?, '5', True)",
+                (config.PrivilegedRoles_Moderator,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP4', ?, '5', False)",
+                (config.PrivilegedRoles_VIP4,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP3', ?, '4', False)",
+                (config.PrivilegedRoles_VIP3,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP2', ?, '3', False)",
+                (config.PrivilegedRoles_VIP2,))
+            mariaCur.execute(
+                "INSERT INTO privileged_roles (roleName, roleValue, roleMultiplier, isAdmin) VALUES ('VIP1', ?, '2', False)",
+                (config.PrivilegedRoles_VIP1,))
         mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -613,16 +811,24 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo server buffs
+    # setup demo server buffs
     try:
         mariaCur.execute("SELECT * FROM server_buffs")
         buffs = mariaCur.fetchall()
         if len(buffs) == 0 or buffs == None:
             print("Inserting demo server buffs...")
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double Harvest', False, ?, 'setserversetting harvestamountmultiplier 6.0', 'setserversetting harvestamountmultiplier 3.0', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))  
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Thrall Conversion', False, ?, 'setserversetting ThrallConversionMultiplier 0.25', 'setserversetting ThrallConversionMultiplier 0.5', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
-            mariaCur.execute("INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Crafting Speeds', False, ?, 'setserversetting ItemConvertionMultiplier 0.1', 'setserversetting ItemConvertionMultiplier 0.3', ?, ?, 'DemoUser')",(config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double XP', False, ?, 'setserversetting playerxpratemultiplier 2.0', 'setserversetting playerxpratemultiplier 1.0', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Double Harvest', False, ?, 'setserversetting harvestamountmultiplier 6.0', 'setserversetting harvestamountmultiplier 3.0', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Thrall Conversion', False, ?, 'setserversetting ThrallConversionMultiplier 0.25', 'setserversetting ThrallConversionMultiplier 0.5', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
+            mariaCur.execute(
+                "INSERT INTO server_buffs (buffname, isactive, serverName, activateCommand, deactivateCommand, lastActivated, endTime, lastActivatedBy) VALUES ('Faster Crafting Speeds', False, ?, 'setserversetting ItemConvertionMultiplier 0.1', 'setserversetting ItemConvertionMultiplier 0.3', ?, ?, 'DemoUser')",
+                (config.Server_Name, datetime.now(), datetime.now()))
             mariaCon.commit()
     except mariadb.Error as e:
         if "Duplicate entry" in str(e):
@@ -630,7 +836,7 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo shop items
+    # setup demo shop items
     try:
         mariaCur.execute("SELECT * FROM shop_items")
         items = mariaCur.fetchall()
@@ -649,7 +855,7 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo shop kits
+    # setup demo shop kits
     try:
         mariaCur.execute("SELECT * FROM shop_kits")
         items = mariaCur.fetchall()
@@ -668,13 +874,13 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo protected areas (kills = jail)
+    # setup demo protected areas (kills = jail)
     try:
         mariaCur.execute("SELECT * FROM {server}_protected_areas".format(server=config.Server_Name))
         areas = mariaCur.fetchall()
         if len(areas) == 0 or areas == None:
             print("Inserting demo protected areas")
-            #import protected areas sql file
+            # import protected areas sql file
             pa = open('..\\Setup\\protectedareas.sql', 'r')
             sqlFile = pa.read().replace('{server}', config.Server_Name)
             pa.close()
@@ -688,11 +894,31 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup demo jail info
+    # setup demo vault locations for rent
+    try:
+        mariaCur.execute("SELECT * FROM {server}_vault_rentals".format(server=config.Server_Name))
+        areas = mariaCur.fetchall()
+        if len(areas) == 0 or areas == None:
+            print("Inserting vault protected areas")
+            # import protected areas sql file
+            va = open('..\\Setup\\vault_locations.sql', 'r')
+            sqlFile = va.read().replace('{server}', config.Server_Name)
+            va.close()
+            sqlCommands = sqlFile.split(';')
+            for command in sqlCommands:
+                mariaCur.execute(command)
+                mariaCon.commit()
+    except mariadb.Error as e:
+        if "empty statement" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
+
+    # setup demo jail info
     try:
         mariaCur.execute("SELECT * FROM {server}_jail_info".format(server=config.Server_Name))
         cells = mariaCur.fetchall()
-        if len(cells) == 0 or cells== None:
+        if len(cells) == 0 or cells == None:
             print("Inserting demo shop jail cell info")
             ji = open('..\\Setup\\jail_info.sql', 'r')
             sqlFile = ji.read().replace('{server}', config.Server_Name)
@@ -707,8 +933,8 @@ if __name__ == '__main__':
         else:
             print(f"Error: {e}")
 
-    #setup pvp leaderboards
-    try:     
+    # setup pvp leaderboards
+    try:
         lv = open('..\\Setup\\create_PVP_views.sql', 'r')
         sqlFile = lv.read().replace('{server}', config.Server_Name)
         lv.close()
@@ -721,6 +947,22 @@ if __name__ == '__main__':
             pass
         else:
             print(f"Error: {e}")
-    
+
+    # setup custom views
+    try:
+        cv = open('..\\Setup\\CustomViews.sql', 'r')
+        sqlFile = cv.read().replace('{server}', config.Server_Name)
+        cv.close()
+        sqlCommands = sqlFile.split(';')
+        gamedbCon = sqlite3.connect(config.Server_Game_DB_Location)
+        gamedbCur = gamedbCon.cursor()
+        for command in sqlCommands:
+            gamedbCur.execute(command)
+            gamedbCon.commit()
+    except mariadb.Error as e:
+        if "empty statement" in str(e):
+            pass
+        else:
+            print(f"Error: {e}")
 
     close_mariaDB()

@@ -42,6 +42,12 @@ def create_conan_maps():
         if enabledServers != None:
             for enabledServer in enabledServers:
                 serverName = enabledServer[1]
+                #clean up recent pvp before making a new map
+                dbCur.execute("DELETE FROM {server}_recent_pvp WHERE loadDate < NOW() - INTERVAL 15 MINUTE".format(server=serverName))
+                dbCon.commit()
+                #age off wanted players
+                dbCur.execute("UPDATE {server}_wanted_players SET wantedLevel =0, bounty=0 WHERE wantedLevel >0 AND lastseen < NOW() - INTERVAL 2 Day".format(server=serverName))
+                dbCon.commit()
                 os.chdir("..\\WebPages")
                 base_map = folium.Map(crs='Simple', min_zoom=1, max_zoom=3, zoom_start=2, tiles=None, location=[0,0], control_scale=True)
                 conan_overlay = folium.raster_layers.ImageOverlay(name='map', image='images\\conan.jpg', bounds=[[-370, -342], [445, 475]], zindex=1)
@@ -62,7 +68,7 @@ def create_conan_maps():
                             killstreak = user[3]
                             wantedlevel = user[4]
                             bounty = user[5]
-                            if wantedlevel > 1:
+                            if wantedlevel > 0:
                                 mapX = int(playerX) / 1000
                                 mapY = (int(playerY) / 1000) * -1
                                 
@@ -132,11 +138,12 @@ def create_conan_maps():
                     map_name = '{servername}_map.html'.format(servername=serverName)
                     base_map.save(map_name)
                     
-                    dbCur.close()
-                    dbCon.close()
+                    
                     addAutoRefresh(map_name)
                 except Exception as e:
                     print(f"Map Error: {e}")
+        dbCur.close()
+        dbCon.close()
         time.sleep(30)
         
 

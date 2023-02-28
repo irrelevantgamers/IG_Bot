@@ -14,6 +14,10 @@ global Server_Game_DB_Location
 global Server_Game_Log_Location
 global Server_Map_Url
 global Server_Prison_Exit_Coordinates
+global Server_Prison_min_x
+global Server_Prison_max_x
+global Server_Prison_min_y
+global Server_Prison_max_y
 global Discord_ServerLog_Channel
 global Discord_Killlog_Channel
 global Discord_Solo_LeaderBoardAll_Channel
@@ -43,7 +47,9 @@ global PrivilegedRoles_VIP1
 global PrivilegedRoles_VIP2
 global PrivilegedRoles_VIP3
 global PrivilegedRoles_VIP4
-global PrivilegedRoles_StandardUser
+global Firewall_Bot_Enabled
+global Firewall_Blocklist_file
+
 
 config = configparser.ConfigParser()
 config.read("..\\config.ini")
@@ -61,6 +67,36 @@ Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
 Server_Map_Url = config["Server"]["Map_Url"]
 Server_Prison_Exit_Coordinates = config["Server"]["Prison_Exit_Coordinates"]
+Server_Prison_min_x = int(config["Server"]["Prison_min_x"])
+Server_Prison_max_x = int(config["Server"]["Prison_max_x"])
+Server_Prison_min_y = int(config["Server"]["Prison_min_y"])
+Server_Prison_max_y = int(config["Server"]["Prison_max_y"])
+ServerUnderwold_Name = config["ServerUnderwold"]["Name"]
+ServerUnderwold_RCON_Host = config["ServerUnderwold"]["RCON_Host"]
+ServerUnderwold_RCON_Port = int(config["ServerUnderwold"]["RCON_Port"])
+ServerUnderwold_RCON_Pass = config["ServerUnderwold"]["RCON_Pass"]
+ServerUnderwold_SteamQuery_Port = int(config["ServerUnderwold"]["SteamQuery_Port"])
+ServerUnderwold_Game_DB_Location = config["ServerUnderwold"]["Game_DB_Location"]
+ServerUnderwold_Game_Log_Location = config["ServerUnderwold"]["Game_Log_Location"]
+ServerUnderwold_Map_Url = config["ServerUnderwold"]["Map_Url"]
+ServerUnderwold_Prison_Exit_Coordinates = config["ServerUnderwold"]["Prison_Exit_Coordinates"]
+ServerUnderwold_Prison_min_x = int(config["ServerUnderwold"]["Prison_min_x"])
+ServerUnderwold_Prison_max_x = int(config["ServerUnderwold"]["Prison_max_x"])
+ServerUnderwold_Prison_min_y = int(config["ServerUnderwold"]["Prison_min_y"])
+ServerUnderwold_Prison_max_y = int(config["ServerUnderwold"]["Prison_max_y"])
+ServerStygia_Name = config["ServerStygia"]["Name"]
+ServerStygia_RCON_Host = config["ServerStygia"]["RCON_Host"]
+ServerStygia_RCON_Port = int(config["ServerStygia"]["RCON_Port"])
+ServerStygia_RCON_Pass = config["ServerStygia"]["RCON_Pass"]
+ServerStygia_SteamQuery_Port = int(config["ServerStygia"]["SteamQuery_Port"])
+ServerStygia_Game_DB_Location = config["ServerStygia"]["Game_DB_Location"]
+ServerStygia_Game_Log_Location = config["ServerStygia"]["Game_Log_Location"]
+ServerStygia_Map_Url = config["ServerStygia"]["Map_Url"]
+ServerStygia_Prison_Exit_Coordinates = config["ServerStygia"]["Prison_Exit_Coordinates"]
+ServerStygia_Prison_min_x = int(config["ServerStygia"]["Prison_min_x"])
+ServerStygia_Prison_max_x = int(config["ServerStygia"]["Prison_max_x"])
+ServerStygia_Prison_min_y = int(config["ServerStygia"]["Prison_min_y"])
+ServerStygia_Prison_max_y = int(config["ServerStygia"]["Prison_max_y"])
 Discord_ServerLog_Channel = config["Discord"]["ServerLog_Channel"]
 Discord_Killlog_Channel = int(config["Discord"]["Killlog_Channel"])
 Discord_Solo_LeaderBoardAll_Channel = config["Discord"]["Solo_LeaderBoardAll_Channel"]
@@ -90,5 +126,6 @@ PrivilegedRoles_VIP1 = config["PrivilegedRoles"]["VIP1"]
 PrivilegedRoles_VIP2 = config["PrivilegedRoles"]["VIP2"]
 PrivilegedRoles_VIP3 = config["PrivilegedRoles"]["VIP3"]
 PrivilegedRoles_VIP4 = config["PrivilegedRoles"]["VIP4"]
-PrivilegedRoles_StandardUser = config["PrivilegedRoles"]["StandardUser"]
 Time_Timezone = int(config["Time"]["Timezone"])
+Firewall_Bot_Enabled = bool(config["Firewall"]["Firewall_Bot_Enabled"])
+Firewall_Blocklist_file = config["Firewall"]["Firewall_Blocklist_file"]
