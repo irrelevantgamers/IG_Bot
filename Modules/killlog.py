@@ -146,14 +146,14 @@ def kill_stream():
                             # Killers PlatformID
                             try:
                                 exiled_gamedb_cur.execute(
-                                    "SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
+                                    "SELECT a.user FROM characters c LEFT JOIN accounts a on c.playerid = a.id WHERE c.id =?",
                                     (playerID,))
                                 PlayerPlatformID = exiled_gamedb_cur.fetchone()
                                 if PlayerPlatformID is None:
                                     PlayerPlatformID = 'N\\A'
                                 # victims PlatformID
                                 exiled_gamedb_cur.execute(
-                                    "SELECT a.user FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.id =?",
+                                    "SELECT a.user FROM characters c LEFT JOIN accounts a on c.playerid = a.id WHERE c.id =?",
                                     (victimID,))
                                 VictimPlatformID = exiled_gamedb_cur.fetchone()
                                 if VictimPlatformID is None:

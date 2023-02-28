@@ -1,19 +1,9 @@
-from pickle import FALSE
-from re import M
-from time import time
 import removefirewallblock
 
 
 def discord_bot():
-    from asyncio.windows_events import NULL
-    from subprocess import Popen
-    from unicodedata import name
     import discord
-    from discord.ext import commands
-    from discord.utils import get
     import asyncio
-    import sqlite3
-    from sqlite3 import Error
     import valve.rcon
     import sys
     import mariadb
@@ -23,7 +13,6 @@ def discord_bot():
     from datetime import datetime, timedelta
     from getconid import getconid
     import os
-    import easyrcon
     # Get server id from config file and get server info from mariadb
     sys.path.insert(0, '..\\Modules')
     # read in the config variables from importconfig.py
@@ -275,9 +264,7 @@ def discord_bot():
 
             await asyncio.sleep(600)  # updates every 10 minutes
 
-    async def placeOrderM(senderID, userIN, channelID):
-        sourcechannel = client.get_channel(channelID)
-        loadDate = datetime.now()
+    async def placeOrderM(senderID, userIN, message):
         try:
             try:
                 shopCon = mariadb.connect(
@@ -292,7 +279,12 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             shopCur = shopCon.cursor()
-            # Get the price of the item
+
+            shopCur.execute(
+                f"SELECT conanplatformid FROM accounts WHERE discordid =?",
+                (senderID,))
+            senderDetails = shopCur.fetchone()
+            # Get item ID and count
             userINsplit = userIN.split("x")
             if len(userINsplit) == 2:
                 itemNo = userINsplit[0]
@@ -302,52 +294,66 @@ def discord_bot():
                 itemQty = 1
 
             platformid = 'D016E285B4F004D4'
-            shopCur.execute("SELECT ID, serverName FROM servers WHERE enabled =True")
-            enabledServers = shopCur.fetchall()
-            for enabledServer in enabledServers:
-                serverid = enabledServer[0]
-                serverName = enabledServer[1]
-                print(f"Looking at {serverName}")
-                shopCur.execute(
-                    f"SELECT conid FROM {serverName}_currentUsers WHERE platformid = ? LIMIT 1",
-                    (platformid,))
-                shopCur.execute(
-                    "SELECT rcon_host, rcon_port, rcon_pass FROM servers WHERE ID =?",
-                    (serverid,))
-                rconInfo = shopCur.fetchone()
-                if rconInfo != None:
-                    rcon_host = rconInfo[0]
-                    rcon_port = rconInfo[1]
-                    rcon_pass = rconInfo[2]
+            print(f"PlatformID: {senderDetails[0]}")
+            if platformid == senderDetails[0]:
+                print("Match")
+                shopCur.execute("SELECT ID, serverName FROM servers WHERE enabled =True")
+                enabledServers = shopCur.fetchall()
+                i = 0
+                while i < len(enabledServers):
+                    enabledServer = enabledServers[i]
+                    serverid = enabledServer[0]
+                    serverName = enabledServer[1]
+                    print(f"Looking at {serverName}")
+                    shopCur.execute(
+                        f"SELECT conid FROM {serverName}_currentUsers WHERE platformid = ? LIMIT 1",
+                        (platformid,))
+                    shopCur.execute(
+                        "SELECT rcon_host, rcon_port, rcon_pass FROM servers WHERE ID =?",
+                        (serverid,))
+                    rconInfo = shopCur.fetchone()
+                    if rconInfo is not None:
+                        print(f"Found on: {serverName}")
+                        rcon_host = rconInfo[0]
+                        rcon_port = rconInfo[1]
+                        rcon_pass = rconInfo[2]
+                        break
+                    i += 1
 
-            rconSuccess = 0
-            attempts = 0
-            conid = getconid(rcon_host, int(rcon_port), rcon_pass, platformid)
-            while rconSuccess == 0 and attempts <= 5:
-                try:
-                    print(f"conid: {conid}")
-                    with valve.rcon.RCON((rcon_host, int(rcon_port)), rcon_pass) as rcon:
-                        response = rcon.execute(f"con {conid} spawnitem {itemNo} {itemQty}")
-                        rcon.close()
-                    print(response.text)
-                    rconSuccess = 1
-                except valve.rcon.RCONAuthenticationError:
-                    print("Authentication Error")
-                    rconSuccess = 0
-                    attempts = attempts + 1
-                    pass
-                except ConnectionResetError:
-                    print("Could not connect to server. Retry later")
-                    rconSuccess = 0
-                    attempts = attempts + 5
-                    pass
-
-            shopCur.close()
-            shopCon.close()
+                rconSuccess = 0
+                attempts = 0
+                conid = getconid(rcon_host, int(rcon_port), rcon_pass, platformid)
+                while rconSuccess == 0 and attempts <= 5:
+                    try:
+                        print(f"conid: {conid}")
+                        with valve.rcon.RCON((rcon_host, int(rcon_port)), rcon_pass) as rcon:
+                            response = rcon.execute(f"con {conid} spawnitem {itemNo} {itemQty}")
+                            rcon.close()
+                        print(response.text)
+                        rconSuccess = 1
+                    except valve.rcon.RCONAuthenticationError:
+                        print("Authentication Error")
+                        rconSuccess = 0
+                        attempts = attempts + 1
+                        pass
+                    except ConnectionResetError:
+                        print("Could not connect to server. Retry later")
+                        rconSuccess = 0
+                        attempts = attempts + 5
+                        pass
+                    msg = "Insert random cat phrases here...."
+            else:
+                print("Not a match")
+                msg = "Insert random cat phrases here..."
+                shopCur.close()
+                shopCon.close()
         except Exception as e:
             print(f"Error on DB: {e}")
-            msg = ("Couldn't connect to DB. Try again later")
+            # msg = "Couldn't connect to DB. Try again later"
             pass
+
+        m = await message.channel.send(msg)
+        # print(m)
 
     async def placeOrder(senderID, userIN, channelID):
         sourcechannel = client.get_channel(channelID)
@@ -799,7 +805,7 @@ def discord_bot():
                 pass
             shopCur.close()
             shopCon.close()
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
 
     async def getUserInfo(author, channelID):
         try:
@@ -1705,7 +1711,7 @@ def discord_bot():
             channelID = message.channel.id
             author = message.author
             # await purchaseItem(senderID,userIN,channelID,author)
-            await placeOrderM(senderID, userIN, channelID)
+            await placeOrderM(senderID, userIN, message)
 
         if message.content.startswith('!refund'):
             userIN = message.content[8:]

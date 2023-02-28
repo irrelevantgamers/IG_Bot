@@ -125,7 +125,7 @@ def watch_game_db():
                         connection = sqlite3.connect(file_path_db)
                         cursor = connection.cursor()
                         cursor.execute(
-                            f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE a.user =?",
+                            f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN accounts a on c.playerid = a.id WHERE a.user =?",
                             (assignedPlayerPlatformID,))
                         result_id = cursor.fetchone()
                         characterID = result_id[0]

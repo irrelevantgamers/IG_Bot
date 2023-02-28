@@ -129,7 +129,7 @@ def game_log_watcher():
                             # find character ID
                             # cursor.execute(f"SELECT id FROM characters WHERE char_name ='{log_character[0]}'")
                             cursor.execute(
-                                f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =?",
+                                f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN accounts a on c.playerid = a.id WHERE c.char_name =?",
                                 (log_character[0],))
                             result_id = cursor.fetchone()
                             # print(f"Character-ID: {result_id[0]}")
@@ -254,7 +254,7 @@ def game_log_watcher():
 
                 # find character ID
                 cursor.execute(
-                    f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'",
+                    f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN accounts a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'",
                     (log_character[0],))
                 result_id = cursor.fetchone()
 
@@ -314,7 +314,7 @@ def game_log_watcher():
 
                 # find character ID
                 cursor.execute(
-                    f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'",
+                    f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN accounts a on c.playerid = a.id WHERE c.char_name =? AND a.online ='1'",
                     (log_character[0],))
                 result_id = cursor.fetchone()
 
