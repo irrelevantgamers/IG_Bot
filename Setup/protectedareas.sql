@@ -20,5 +20,4 @@ INSERT INTO `{server}_protected_areas` (`paname`, `minX`, `minY`, `maxX`, `maxY`
 	('Brimstone Ob', '-205703', '50314', '-202865', '53635'),
 	('Brimstone Maproom', '-199094', '52480', '-197016', '54561'),
 	('Vault Rental Facility', '144783', '255135', '152860', '265797'),
-	('Safezone', '-310000', '240000', '110000', '240000'),
 	('Sunshine Bail Bonds', '47507', '259702', '50231', '257141');

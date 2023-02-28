@@ -1,10 +1,14 @@
+from time import sleep
 import re
 import time
+import requests
+import json
 import sqlite3
 import os
+import configparser
 import mariadb
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def game_log_watcher():
@@ -113,7 +117,7 @@ def game_log_watcher():
                 results = dbCur.fetchall()
                 for row in results:
                     discordID = row[0]
-                    # discordObjID = row[1]
+                    discordObjID = row[1]
                     code = row[2]
 
                     if code == inputcode:
@@ -123,10 +127,15 @@ def game_log_watcher():
                             cursor = connection.cursor()
 
                             # find character ID
+                            # cursor.execute(f"SELECT id FROM characters WHERE char_name ='{log_character[0]}'")
                             cursor.execute(
                                 f"SELECT c.id, c.playerid, c.char_name, a.user as PlatformID FROM characters c LEFT JOIN account a on c.playerid = a.id WHERE c.char_name =?",
                                 (log_character[0],))
                             result_id = cursor.fetchone()
+                            # print(f"Character-ID: {result_id[0]}")
+                            # print(f"Character-Player-ID: {result_id[1]}")
+                            # print(f"Character-Name: {result_id[2]}")
+                            # print(f"Platform-ID: {result_id[3]}")
 
                             platformid = result_id[3]
 

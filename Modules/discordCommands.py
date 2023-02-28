@@ -1,5 +1,7 @@
+import discord
+import asyncio
 from discord.ext import commands
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, MissingPermissions
 import os.path
 
 bot = commands.Bot(command_prefix='!')  # command prefix, ADD tie into ini
@@ -25,9 +27,9 @@ async def on_member_remove(member):
 @bot.command()
 async def commands(ctx):
     if os.path.exists('commands.txt'):
-        with open("commands.txt", "r") as cmds:
-            cmds = cmds.readlines()
-            for i in cmds:
+        with open("commands.txt", "r") as list:
+            list = list.readlines()
+            for i in list:
                 i = i.strip()
                 await ctx.send(i)  # prints commands
     else:

@@ -1337,57 +1337,54 @@ def discord_bot():
                     dbCur.execute(
                         "SELECT player, platformid, current_strikes, strike_outs FROM {server}_offenders".format(
                             server=server[1]))
-                    offenders = dbCur.fetchall()
-                    if offenders != None:
-                        for offender in offenders:
-                            player = offender[0]
-                            platformid = offender[1]
-                            current_strikes = offender[2]
-                            strike_outs = offender[3]
+                    result = dbCur.fetchall()
+                    if result != None:
+                        for result in result:
+                            player = result[0]
+                            platformid = result[1]
+                            current_strikes = result[2]
+                            strike_outs = result[3]
                             if current_strikes >= 3:
                                 print("has 3 or more strikes")
                                 # get empty jail cell
                                 dbCur.execute(
                                     "SELECT id, cellname, spawnLocation FROM {server}_jail_info WHERE prisoner IS NULL".format(
                                         server=server[1]))
-                                jailCell = dbCur.fetchone()
-                                if jailCell != None:
+                                result = dbCur.fetchone()
+                                if result != None:
+                                    cellid = result[0]
+                                    cellname = result[1]
+                                    spawnLocation = result[2]
+                                    # update prisoner in jail cell
                                     print(f"found empty cell {cellname}")
-                                    for cell in jailCell:
-                                        cellid = cell[0]
-                                        cellname = cell[1]
-                                        spawnLocation = cell[2]
-                                        # update prisoner in jail cell
-                                        sentenceTime = datetime.now()
-                                        new_strike_outs = strike_outs + 1
-                                        sentenceLength = new_strike_outs * 10
-                                        dbCur.execute(
-                                            "UPDATE {server}_jail_info SET prisoner =?, assignedPlayerPlatformID =?, sentenceTime =?, sentenceLength =? WHERE id = ?".format(
-                                                server=server[1]),
-                                            (player, platformid, sentenceTime, sentenceLength, cellid))
-                                        current_strikes -= 3
-                                        dbCur.execute(
-                                            "UPDATE {server}_offenders SET current_strikes =?, strike_outs =? WHERE player = '{player}'".format(
-                                                server=server[1], player=player), (current_strikes), (new_strike_outs,))
-                                        # issue a tp request
-                                        dbCur.execute(
-                                            "INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) values (?,?,?)".format(
-                                                server=server[1]), (player, spawnLocation, platformid))
-                                        dbCon.commit()
-                                        await killlog_channel.send(
-                                            "{} has been senteneced to {} minutes in jail.".format(player, sentenceLength))
-                                else:
-                                    print("No jail cell found")
+                                    sentenceTime = datetime.now()
+                                    new_strike_outs = strike_outs + 1
+                                    sentenceLength = new_strike_outs * 10
+                                    dbCur.execute(
+                                        "UPDATE {server}_jail_info SET prisoner =?, assignedPlayerPlatformID =?, sentenceTime =?, sentenceLength =? WHERE id = ?".format(
+                                            server=server[1]),
+                                        (player, platformid, sentenceTime, sentenceLength, cellid))
+
+                                    dbCur.execute(
+                                        "UPDATE {server}_offenders SET current_strikes = 0, strike_outs =? WHERE player = '{player}'".format(
+                                            server=server[1], player=player), (new_strike_outs,))
+                                    # issue a tp request
+                                    dbCur.execute(
+                                        "INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) values (?,?,?)".format(
+                                            server=server[1]), (player, spawnLocation, platformid))
+                                    dbCon.commit()
+                                    await killlog_channel.send(
+                                        "{} has been senteneced to {} minutes in jail.".format(player, sentenceLength))
 
                     # update jail info
                     dbCur.execute(
                         "SELECT cellName, prisoner, sentenceTime, sentenceLength FROM {server}_jail_info ORDER BY ID ASC".format(
                             server=server[1]))
-                    results = dbCur.fetchall()
-                    if results != None:
+                    result = dbCur.fetchall()
+                    if result != None:
                         embedvar = discord.Embed(title='{server} Jail Info'.format(server=server[1]),
                                                  color=discord.Color.gold())
-                        for result in results:
+                        for result in result:
                             cellName = result[0]
                             prisoner = result[1]
                             sentenceTime = result[2]
@@ -1889,7 +1886,7 @@ def discord_bot():
             userin = message.content
             userin = userin[9:]
             userin = userin.strip()
-            if config.Firewall_Bot_Enabled is True:
+            if (config.Firewall_Bot_Enabled is True):
                 # isAdmin ?
                 isAdmin = await checkIsAdmin(author)
                 if isAdmin == True:
@@ -1900,27 +1897,7 @@ def discord_bot():
                         msg = "error in removefirewallblock.removeIPfromBlockList"
 
             else:
-                msg = "Firewall module is not enabled"
-
-            await message.channel.send(msg)
-
-        if message.content.startswith('!block'):
-            author = message.author
-            userin = message.content
-            userin = userin[9:]
-            userin = userin.strip()
-            if config.Firewall_Bot_Enabled is True:
-                # isAdmin ?
-                isAdmin = await checkIsAdmin(author)
-                if isAdmin == True:
-                    firewallreturn = removefirewallblock.removeIPfromBlocklist(userin)
-                    if firewallreturn != None:
-                        msg = firewallreturn
-                    else:
-                        msg = "error in removefirewallblock.removeIPfromBlockList"
-
-            else:
-                msg = "Firewall module is not enabled"
+                msg = ("Firewall module is not enabled")
 
             await message.channel.send(msg)
 
@@ -1986,72 +1963,6 @@ def discord_bot():
                             msg = (f"error in removefirewallblock.unbanPlayer")
                     else:
                         msg = ("Please provide a steamid or mention a user to unban")
-            else:
-                msg = ("You are not an admin")
-            await message.channel.send(msg)
-
-        if message.content.startswith('!ban'):
-            author = message.author
-            pattern = re.compile(r'(?: <\S*[0-9]*>)?', re.IGNORECASE)
-            match = pattern.findall(message.content)
-
-            mentioned = message.mentions
-            mentionedCount = len(mentioned)
-
-            userin = message.content
-            userin = userin[7:]
-            # isAdmin ?
-            isAdmin = await checkIsAdmin(author)
-            if isAdmin == True:
-                if mentionedCount != 0:
-                    try:
-                        shopCon = mariadb.connect(
-                            user=config.DB_user,
-                            password=config.DB_pass,
-                            host=config.DB_host,
-                            port=config.DB_port,
-                            database=config.DB_name
-
-                        )
-                    except mariadb.Error as e:
-                        print(f"Error connecting to MariaDB Platform: {e}")
-                        sys.exit(1)
-
-                    # Get MariaCursor
-                    shopCur = shopCon.cursor()
-
-                    for mentions in mentioned:
-                        discordid = mentions.name + "#" + mentions.discriminator
-                        # print(f"{senderDiscordID} is gifting {gift} to {discordid}")
-
-                        # Get starting balance
-                        shopCur.execute(f"SELECT steamplatformid FROM accounts WHERE discordid =?", (discordid,))
-                        target = shopCur.fetchone()
-                        if target == None:
-                            msg = (f"{discordid} is not associated with an account.")
-                        else:
-                            # unban
-                            steamid = target[0]
-                            print("Banning player " + steamid)
-                            rconreturn = removefirewallblock.unbanPlayer(steamid)
-                            if rconreturn != None:
-                                msg = (f"{rconreturn}")
-                            else:
-                                msg = (f"error in addfirewallblock.banPlayer")
-
-                    shopCur.close()
-                    shopCon.close()
-                else:
-                    if userin != "":
-                        steamid = userin
-                        print("Banning player " + steamid)
-                        rconreturn = removefirewallblock.unbanPlayer(steamid)
-                        if rconreturn != None:
-                            msg = (f"{rconreturn}")
-                        else:
-                            msg = (f"error in addfirewallblock.banPlayer")
-                    else:
-                        msg = ("Please provide a steamid or mention a user to ban")
             else:
                 msg = ("You are not an admin")
             await message.channel.send(msg)
