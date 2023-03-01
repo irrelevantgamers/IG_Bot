@@ -1333,61 +1333,70 @@ def discord_bot():
             # update jail info
             dbCur.execute("Select id, servername, Jail_Channel, killlog_channel FROM servers WHERE Enabled =True")
             servers = dbCur.fetchall()
-            if servers != None:
+            if servers is not None:
                 for server in servers:
-                    channel = client.get_channel(int(server[2]))
-                    await channel.purge()
-                    killlog_channel = client.get_channel(int(server[3]))
-
                     # check if player has 3 strikes and if so, add to jail
                     dbCur.execute(
                         "SELECT player, platformid, current_strikes, strike_outs FROM {server}_offenders".format(
                             server=server[1]))
-                    result = dbCur.fetchall()
-                    if result != None:
-                        for result in result:
-                            player = result[0]
-                            platformid = result[1]
-                            current_strikes = result[2]
-                            strike_outs = result[3]
+                    players = dbCur.fetchall()
+                    if players is not None:
+                        for char in players:
+                            player = char[0]
+                            platformid = char[1]
+                            current_strikes = char[2]
+                            strike_outs = char[3]
                             if current_strikes >= 3:
                                 print("has 3 or more strikes")
                                 # get empty jail cell
                                 dbCur.execute(
                                     "SELECT id, cellname, spawnLocation FROM {server}_jail_info WHERE prisoner IS NULL".format(
                                         server=server[1]))
-                                result = dbCur.fetchone()
-                                if result != None:
-                                    cellid = result[0]
-                                    cellname = result[1]
-                                    spawnLocation = result[2]
-                                    # update prisoner in jail cell
-                                    print(f"found empty cell {cellname}")
-                                    sentenceTime = datetime.now()
-                                    new_strike_outs = strike_outs + 1
-                                    sentenceLength = new_strike_outs * 10
-                                    dbCur.execute(
-                                        "UPDATE {server}_jail_info SET prisoner =?, assignedPlayerPlatformID =?, sentenceTime =?, sentenceLength =? WHERE id = ?".format(
-                                            server=server[1]),
-                                        (player, platformid, sentenceTime, sentenceLength, cellid))
+                                cages = dbCur.fetchone()
+                                if cages is not None:
+                                    for cell in cages:
+                                        cellid = cell[0]
+                                        cellname = cell[1]
+                                        spawnLocation = cell[2]
+                                        # update prisoner in jail cell
+                                        print(f"found empty cell {cellname}")
+                                        sentenceTime = datetime.now()
+                                        new_strike_outs = strike_outs + 1
+                                        sentenceLength = new_strike_outs * 10
+                                        new_strikes = current_strikes - 3
 
-                                    dbCur.execute(
-                                        "UPDATE {server}_offenders SET current_strikes = 0, strike_outs =? WHERE player = '{player}'".format(
-                                            server=server[1], player=player), (new_strike_outs,))
-                                    # issue a tp request
-                                    dbCur.execute(
-                                        "INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) values (?,?,?)".format(
-                                            server=server[1]), (player, spawnLocation, platformid))
-                                    dbCon.commit()
-                                    await killlog_channel.send(
-                                        "{} has been senteneced to {} minutes in jail.".format(player, sentenceLength))
+                                        try:
+                                            dbCur.execute(
+                                                "UPDATE {server}_jail_info SET prisoner =?, assignedPlayerPlatformID =?, sentenceTime =?, sentenceLength =? WHERE id = ?".format(
+                                                    server=server[1]),
+                                                (player, platformid, sentenceTime, sentenceLength, cellid))
+
+                                            dbCur.execute(
+                                                "UPDATE {server}_offenders SET current_strikes = ?, strike_outs =? WHERE player = '{player}'".format(
+                                                    server=server[1], player=player), (new_strikes, new_strike_outs,))
+
+                                            # issue a tp request
+                                            dbCur.execute(
+                                                "INSERT INTO {server}_teleport_requests (player, dstlocation, platformid) values (?,?,?)".format(
+                                                    server=server[1]), (player, spawnLocation, platformid))
+                                            dbCon.commit()
+                                        except:
+                                            print("There was some sort of problem")
+
+                                        await config.Discord_Killlog_Channel.send(
+                                            "{} has been senteneced to {} minutes in jail.".format(player,
+                                                                                                   sentenceLength))
+                                        await config.Discord_Event_Channel.send(
+                                            "{} has been senteneced to {} minutes in jail.".format(player,
+                                                                                                   sentenceLength))
 
                     # update jail info
+                    await config.Discord_Jail_Channel.purge()
                     dbCur.execute(
                         "SELECT cellName, prisoner, sentenceTime, sentenceLength FROM {server}_jail_info ORDER BY ID ASC".format(
                             server=server[1]))
                     result = dbCur.fetchall()
-                    if result != None:
+                    if result is not None:
                         embedvar = discord.Embed(title='{server} Jail Info'.format(server=server[1]),
                                                  color=discord.Color.gold())
                         for result in result:
@@ -1396,7 +1405,7 @@ def discord_bot():
                             sentenceTime = result[2]
                             sentenceLength = result[3]
 
-                            if prisoner == None:
+                            if prisoner is None:
                                 embedvar.add_field(name="Cell:{} \tPrisoner: {}".format(cellName, prisoner),
                                                    value="Time Left: 0 minutes", inline=False)
                             else:
@@ -1414,7 +1423,7 @@ def discord_bot():
                                 embedvar.add_field(name="Cell:{} \tPrisoner: {}".format(cellName, prisoner),
                                                    value="Time Left: {} minutes".format(int(TimeLeft)), inline=False)
 
-                        await channel.send(embed=embedvar)
+                        await config.Discord_Jail_Channel.send(embed=embedvar)
             dbCon.close()
             await asyncio.sleep(30)
 

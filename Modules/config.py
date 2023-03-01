@@ -32,6 +32,8 @@ global Discord_BuildingPieceTracking_Channel
 global Discord_InventoryPieceTracking_Channel
 global Discord_Wanted_Channel
 global Discord_Jail_Channel
+global Discord_Event_Channel
+global Discord_Alerts_Channel
 global Discord_Items_for_Sale_Channel
 global Discord_ServerBuffs_Channel
 global Discord_VaultRental_Channel
@@ -89,6 +91,7 @@ Discord_Items_for_Sale_Channel = config["Discord"]["Items_for_Sale_Channel"]
 Discord_ServerBuffs_Channel = config["Discord"]["ServerBuffs_Channel"]
 Discord_VaultRental_Channel = config["Discord"]["VaultRental_Channel"]
 Discord_Event_Channel = config["Discord"]["Event_Channel"]
+Discord_Alerts_Channel = config["Discord"]["Alerts_Channel"]
 Discord_API_KEY = config["Discord"]["API_KEY"]
 Shop_StartingCash = config["Shop"]["StartingCash"]
 Shop_PayCheck = config["Shop"]["PayCheck"]
