@@ -1,7 +1,5 @@
-import discord
-import asyncio
 from discord.ext import commands
-from discord.ext.commands import has_permissions, MissingPermissions
+from discord.ext.commands import has_permissions
 import os.path
 
 bot = commands.Bot(command_prefix='!')  # command prefix, ADD tie into ini

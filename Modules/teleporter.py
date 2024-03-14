@@ -54,7 +54,7 @@ def TeleportRequestWatcher():
         # look for teleport requests
         dbCur.execute("Select id, servername FROM servers WHERE Enabled =True")
         servers = dbCur.fetchall()
-        if servers != None:
+        if servers is not None:
             for server in servers:
                 now = datetime.now()
                 eligibleProcessTime = now - timedelta(seconds=10)
@@ -62,7 +62,7 @@ def TeleportRequestWatcher():
                     "SELECT player, platformid, dstLocation, attempts FROM {servername}_teleport_requests WHERE completed =False AND lastAttempt <= ?".format(
                         servername=server[1]), (eligibleProcessTime,))
                 result = dbCur.fetchall()
-                if result != None:
+                if result is not None:
                     for request in result:
                         player = request[0]
                         platformid = request[1]
@@ -72,7 +72,7 @@ def TeleportRequestWatcher():
                         dbCur.execute("SELECT rcon_host, rcon_port, rcon_pass FROM servers WHERE serverName =?",
                                       (server[1],))
                         serverInfo = dbCur.fetchone()
-                        if serverInfo != None:
+                        if serverInfo is not None:
                             rcon_host = serverInfo[0]
                             rcon_port = serverInfo[1]
                             rcon_pass = serverInfo[2]
@@ -80,9 +80,9 @@ def TeleportRequestWatcher():
                             dbCur.execute("SELECT platformid FROM {servername}_currentusers WHERE platformid =?".format(
                                 servername=server[1]), (platformid,))
                             result = dbCur.fetchone()
-                            if result != None:
+                            if result is not None:
                                 conid = getconid(rcon_host, int(rcon_port), rcon_pass, platformid)
-                                if conid != None:
+                                if conid is not None:
                                     success = 0
                                     attempts = 0
                                     while success == 0 and attempts <= 5:
@@ -128,6 +128,9 @@ def TeleportRequestWatcher():
 
 
 def CancelAllTeleportRequests(server):
+    # create logger
+    logger = logging.getLogger("teleporter")
+    logger.setLevel(level=logging.DEBUG)
     logger.info('Cancelling all teleport requests for %s', server)
     try:
         dbCon = mariadb.connect(
