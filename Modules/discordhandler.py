@@ -810,7 +810,7 @@ def discord_bot():
                 if members != None:
                     matchedMembers = []
                     for member in members:
-                        discordid = member.name + "#" + member.discriminator
+                        discordid = member.name
                         if matchedMembers.count(discordid) == 0:
                             memberdiscordid = discordid
                             dbCur.execute("UPDATE accounts SET earnRateMultiplier =?, isAdmin =? WHERE discordid =?",
@@ -1904,4 +1904,3 @@ def discord_bot():
             await message.channel.send(msg)
 
     client.run(f"{APIKEY}")
-
