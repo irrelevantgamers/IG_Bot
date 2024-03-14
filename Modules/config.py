@@ -49,6 +49,7 @@ global PrivilegedRoles_VIP3
 global PrivilegedRoles_VIP4
 global Firewall_Bot_Enabled
 global Firewall_Blocklist_file
+global Server_Prison_Enabled
 
 
 config = configparser.ConfigParser()
@@ -66,11 +67,12 @@ Server_SteamQuery_Port = int(config["Server"]["SteamQuery_Port"])
 Server_Game_DB_Location = config["Server"]["Game_DB_Location"]
 Server_Game_Log_Location = config["Server"]["Game_Log_Location"]
 Server_Map_Url = config["Server"]["Map_Url"]
-Server_Prison_Exit_Coordinates = config["Server"]["Prison_Exit_Coordinates"]
-Server_Prison_min_x = int(config["Server"]["Prison_min_x"])
-Server_Prison_max_x = int(config["Server"]["Prison_max_x"])
-Server_Prison_min_y = int(config["Server"]["Prison_min_y"])
-Server_Prison_max_y = int(config["Server"]["Prison_max_y"])
+Server_Prison_Exit_Coordinates = config["Prison"]["Prison_Exit_Coordinates"]
+Server_Prison_min_x = int(config["Prison"]["Prison_min_x"])
+Server_Prison_max_x = int(config["Prison"]["Prison_max_x"])
+Server_Prison_min_y = int(config["Prison"]["Prison_min_y"])
+Server_Prison_max_y = int(config["Prison"]["Prison_max_y"])
+Server_Prison_Enabled = (config["Prison"]["Prison_enabled"])
 Discord_ServerLog_Channel = config["Discord"]["ServerLog_Channel"]
 Discord_Killlog_Channel = int(config["Discord"]["Killlog_Channel"])
 Discord_Solo_LeaderBoardAll_Channel = config["Discord"]["Solo_LeaderBoardAll_Channel"]

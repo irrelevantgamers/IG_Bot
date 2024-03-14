@@ -1,4 +1,11 @@
 #Modules Needed
-python-valve, asyncio, mariadb, discord, sqlite3, folium, python-a2s, lovely_logger
-mariadb~=1.0.11
-discord~=1.7.3
+python-valve
+asyncio
+mariadb
+discord
+python-a2s
+mariadb
+discord
+folium
+requests
+config

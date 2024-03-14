@@ -109,7 +109,7 @@ if __name__ == '__main__':
             logLocation				                CHAR(255) NOT NULL 					COMMENT 'path to the game server log file',
             ServerLog_Channel                       CHAR(100) NOT NULL 					COMMENT 'Discord Channel ID to send the server log to',
             Killlog_Channel			                CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the kill log to',
-            Killlog_Last_Event_Time                 TIMESTAMP NOT NULL DEFAULT 0 COMMENT 'Last time the kill event was sent to the log',
+            Killlog_Last_Event_Time                 TIMESTAMP NOT NULL DEFAULT "1111111" COMMENT 'Last time the kill event was sent to the log',
             Solo_LeaderBoardAll_Channel		        CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board all time to',
             Solo_LeaderBoard1Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 7 days to',
             Solo_LeaderBoard7Day_Channel			CHAR(100) NOT NULL 					COMMENT 'Discord channel to send the solo leader board 7 days to',
@@ -686,24 +686,25 @@ if __name__ == '__main__':
             print(f"Error: {e}")
 
     #setup demo protected areas (kills = jail)
-    try:
-        mariaCur.execute("SELECT * FROM {server}_protected_areas".format(server=config.Server_Name))
-        areas = mariaCur.fetchall()
-        if len(areas) == 0 or areas == None:
-            print("Inserting demo protected areas")
-            #import protected areas sql file
-            pa = open('..\\Setup\\protectedareas.sql', 'r')
-            sqlFile = pa.read().replace('{server}', config.Server_Name)
-            pa.close()
-            sqlCommands = sqlFile.split(';')
-            for command in sqlCommands:
-                mariaCur.execute(command)
-                mariaCon.commit()
-    except mariadb.Error as e:
-        if "empty statement" in str(e):
-            pass
-        else:
-            print(f"Error: {e}")
+    if config.Server_Prison_Enabled == True:
+        try:
+            mariaCur.execute("SELECT * FROM {server}_protected_areas".format(server=config.Server_Name))
+            areas = mariaCur.fetchall()
+            if len(areas) == 0 or areas == None:
+                print("Inserting demo protected areas")
+                #import protected areas sql file
+                pa = open('..\\Setup\\protectedareas.sql', 'r')
+                sqlFile = pa.read().replace('{server}', config.Server_Name)
+                pa.close()
+                sqlCommands = sqlFile.split(';')
+                for command in sqlCommands:
+                    mariaCur.execute(command)
+                    mariaCon.commit()
+        except mariadb.Error as e:
+            if "empty statement" in str(e):
+                pass
+            else:
+                print(f"Error: {e}")
 
     #setup demo vault locations for rent
     try:
@@ -726,23 +727,24 @@ if __name__ == '__main__':
             print(f"Error: {e}")
 
     #setup demo jail info
-    try:
-        mariaCur.execute("SELECT * FROM {server}_jail_info".format(server=config.Server_Name))
-        cells = mariaCur.fetchall()
-        if len(cells) == 0 or cells== None:
-            print("Inserting demo shop jail cell info")
-            ji = open('..\\Setup\\jail_info.sql', 'r')
-            sqlFile = ji.read().replace('{server}', config.Server_Name)
-            ji.close()
-            sqlCommands = sqlFile.split(';')
-            for command in sqlCommands:
-                mariaCur.execute(command)
-                mariaCon.commit()
-    except mariadb.Error as e:
-        if "empty statement" in str(e):
-            pass
-        else:
-            print(f"Error: {e}")
+    if config.Server_Prison_Enabled == True:
+        try:
+            mariaCur.execute("SELECT * FROM {server}_jail_info".format(server=config.Server_Name))
+            cells = mariaCur.fetchall()
+            if len(cells) == 0 or cells== None:
+                print("Inserting demo shop jail cell info")
+                ji = open('..\\Setup\\jail_info.sql', 'r')
+                sqlFile = ji.read().replace('{server}', config.Server_Name)
+                ji.close()
+                sqlCommands = sqlFile.split(';')
+                for command in sqlCommands:
+                    mariaCur.execute(command)
+                    mariaCon.commit()
+        except mariadb.Error as e:
+            if "empty statement" in str(e):
+                pass
+            else:
+                print(f"Error: {e}")
 
     #setup pvp leaderboards
     try:     

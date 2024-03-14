@@ -1,13 +1,16 @@
 import valve.rcon
 import time
 import sys
+
 # add Modules folder to system path
 sys.path.insert(0, '..\\Modules')
 # read in the config variables from importconfig.py
 import config
+
+
 def easyRcon(command):
     attempts = 0
-    success=0
+    success = 0
     rcon_host = config.Server_RCON_Host
     rcon_port = config.Server_RCON_Port
     rcon_pass = config.Server_RCON_Pass
@@ -26,4 +29,3 @@ def easyRcon(command):
             attempts = attempts + 1
             print(e)
             time.sleep(1)
-

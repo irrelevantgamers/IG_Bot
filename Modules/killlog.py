@@ -10,9 +10,11 @@ from datetime import datetime, timedelta
 
 # Get server id from config file and get server info from mariadb
 sys.path.insert(0, '..\\Modules')
-#read in the config variables from importconfig.py
+# read in the config variables from importconfig.py
 import config
 import os
+
+
 def connect_mariadb():
     global mariaCon
     global mariaCur
@@ -39,12 +41,12 @@ def close_mariaDB():
 def kill_stream():
     print("Exiled Kill Stream Started")
     while True:
-        #check if we need to exit
+        # check if we need to exit
         if os.path.exists('..\\restart'):
             os._exit(0)
         # read in last event time
         try:
-                dbCon = mariadb.connect(
+            dbCon = mariadb.connect(
                 user=config.DB_user,
                 password=config.DB_pass,
                 host=config.DB_host,
@@ -119,8 +121,10 @@ def kill_stream():
                             else:
                                 sameClan = False
 
-                            #check kill_log to see if same clan in last 24 hours
-                            dbCur.execute("SELECT ID FROM {server}_kill_log WHERE player_clan = victim_clan AND player = ? AND loadDate > ?".format(server=serverid), (player, datetime.now() - timedelta(hours=24)))
+                            # check kill_log to see if same clan in last 24 hours
+                            dbCur.execute(
+                                "SELECT ID FROM {server}_kill_log WHERE player_clan = victim_clan AND player = ? AND loadDate > ?".format(
+                                    server=serverid), (player, datetime.now() - timedelta(hours=24)))
                             same_Clan_Check = dbCur.fetchone()
                             if same_Clan_Check is not None:
                                 sameClan = True
@@ -160,8 +164,9 @@ def kill_stream():
 
                             ##get protected areas
                             try:
-                                dbCur.execute("SELECT paname, minX, minY, maxX, maxY FROM {servername}_protected_areas".format(
-                                    servername=serverid))
+                                dbCur.execute(
+                                    "SELECT paname, minX, minY, maxX, maxY FROM {servername}_protected_areas".format(
+                                        servername=serverid))
                                 protectedareas = dbCur.fetchall()
                                 if len(protectedareas) != 0 and protectedareas[0] != None:
                                     for area in protectedareas:
@@ -171,7 +176,8 @@ def kill_stream():
                                         maxX = area[3]
                                         maxY = area[4]
 
-                                        if ((int(KillLocationX) <= int(maxX)) and (int(KillLocationX) >= int(minX)) and (
+                                        if ((int(KillLocationX) <= int(maxX)) and (
+                                                int(KillLocationX) >= int(minX)) and (
                                                 int(KillLocationY) <= int(maxY)) and (int(KillLocationY) >= int(minY))):
                                             try:
                                                 dbCur.execute(
@@ -211,7 +217,7 @@ def kill_stream():
                             wanted_paid_amount = 0
                             bounty_paid_amount = 0
                             if not sameClan:
-                                #print("checking kill streaks")
+                                # print("checking kill streaks")
                                 matchFound = 0
                                 dbCur.execute(
                                     "SELECT id, platformid, player, killstreak, highestkillstreak, wantedLevel, bounty FROM {servername}_wanted_players".format(
@@ -219,7 +225,7 @@ def kill_stream():
                                 wanted = dbCur.fetchall()
                                 rowcount = len(wanted)
                                 if rowcount != 0:
-                                    #print("existing Wanted players found")
+                                    # print("existing Wanted players found")
                                     for result in wanted:
                                         playerid = result[0]
                                         conanplatformid = result[1]
@@ -260,7 +266,7 @@ def kill_stream():
                                                     "UPDATE {servername}_wanted_players SET wantedLevel =?, bounty =?, X =?, Y =? WHERE id =?".format(
                                                         servername=serverid),
                                                     (newwantedlevel, newbounty, KillLocationX, KillLocationY, playerid))
-                                                
+
                                                 # add coin for the kill
                                                 if wantedLevel > 0:
                                                     dbCur.execute(
@@ -314,17 +320,18 @@ def kill_stream():
                                                     dbCon.commit()
                                                     matchFound = 1
                                     if matchFound == 0:
-                                        #print("no existing wanted players found")
+                                        # print("no existing wanted players found")
                                         dbCur.execute(
                                             "INSERT INTO {servername}_wanted_players (platformid, player, killstreak, highestkillstreak, wantedlevel, bounty, X, Y) VALUES (?,?,'1','1','0','0',?,?)".format(
                                                 servername=serverid),
                                             (PlayerPlatformID[0], player, KillLocationX, KillLocationY))
                                         dbCon.commit()
                                 else:
-                                    #print("no existing wanted players found")
+                                    # print("no existing wanted players found")
                                     dbCur.execute(
                                         "INSERT INTO {servername}_wanted_players (platformid, player, killstreak, highestkillstreak, wantedlevel, bounty, X, Y) VALUES (?,?,'1','1','0','0',?,?)".format(
-                                            servername=serverid), (PlayerPlatformID[0], player, KillLocationX, KillLocationY))
+                                            servername=serverid),
+                                        (PlayerPlatformID[0], player, KillLocationX, KillLocationY))
                                     dbCon.commit()
                             # insert into recent pvp
                             now = datetime.now()
@@ -335,15 +342,18 @@ def kill_stream():
                             dbCon.commit()
 
                             # record last event time to db
+                            
                             dbCur.execute(
                                 "INSERT INTO {servername}_kill_log (player, player_id, player_level, player_clan, victim, victim_id, victim_level, victim_clan, kill_location_x, kill_location_y, kill_type, protected_area, wanted_kill, wanted_paid_amount, bounty_kill, bounty_paid_amount, Killlog_Last_Event_Time) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(
                                     servername=serverid), (
-                                    player, playerID, playerLevel, playerClan, victim, victimID, victimLevel, victimClan,
-                                    KillLocationX, KillLocationY, killtype, ProtectedArea, wantedKill, wanted_paid_amount,
+                                    player, playerID, playerLevel, playerClan, victim, victimID, victimLevel,
+                                    victimClan,
+                                    KillLocationX, KillLocationY, killtype, ProtectedArea, wantedKill,
+                                    wanted_paid_amount,
                                     bountyKill, bounty_paid_amount, Killlog_Last_Event_Time))
                             # update server's last event time
                             dbCur.execute("UPDATE servers SET Killlog_Last_Event_Time = ? WHERE serverName = ?",
-                                            (Killlog_Last_Event_Time, serverid))
+                                          (Killlog_Last_Event_Time, serverid))
                             dbCon.commit()
 
             # close gamedb
