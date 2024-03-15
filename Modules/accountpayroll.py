@@ -21,6 +21,7 @@ def pay_users():
         sys.exit(1)
 
     dbCur = dbCon.cursor()
+    dbCur.execute("SET NAMES utf8mb4;")
     # get servers enabled
     dbCur.execute("Select ID, serverName FROM servers WHERE Enabled =TRUE")
     servers = dbCur.fetchall()

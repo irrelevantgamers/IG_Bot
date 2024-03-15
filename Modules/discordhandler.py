@@ -51,6 +51,7 @@ def discord_bot():
                 sys.exit(1)
 
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
             dbCur.execute("Select servername FROM servers WHERE Enabled =True")
             servers = dbCur.fetchall()
             player_count = 0
@@ -87,6 +88,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
             dbCur.execute("Select servername FROM servers WHERE Enabled =True")
             servers = dbCur.fetchall()
             
@@ -150,7 +152,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
-            dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
             dbCur.execute("Select servername, Killlog_Channel, Event_Channel FROM servers WHERE Enabled =True")
             servers = dbCur.fetchall()
             if servers != None:
@@ -244,6 +246,7 @@ def discord_bot():
                 sys.exit(1)
             try:
                 shopCur = shopCon.cursor()
+                shopCur.execute("SET NAMES utf8mb4;")
                 shopCur.execute(
                     "SELECT DISTINCT(category) FROM shop_items WHERE enabled = True AND category != 'NULL' ORDER BY category ASC")
                 categories = shopCur.fetchall()
@@ -299,6 +302,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             shopCur = shopCon.cursor()
+            shopCur.execute("SET NAMES utf8mb4;")
             # Get the price of the item
             userINsplit = userIN.split("x")
             if len(userINsplit) == 2:
@@ -590,6 +594,7 @@ def discord_bot():
             sys.exit(1)
 
         shopCur = shopCon.cursor()
+        shopCur.execute("SET NAMES utf8mb4;")
         shopCur.execute(
             "SELECT id, order_number, order_value, itemid, in_process, completed, refunded, order_date, last_attempt, completed_date, discordMessageID, discordChannelID, purchaser_platformid FROM order_processing WHERE order_number =?",
             (userIN,))
@@ -655,6 +660,7 @@ def discord_bot():
                     sys.exit(1)
 
                 shopCur = shopCon.cursor()
+                shopCur.execute("SET NAMES utf8mb4;")
                 shopCur.execute(
                     "SELECT id, order_number, itemid, in_process, completed, refunded, order_date, last_attempt, completed_date, discordMessageID, discordChannelID FROM order_processing WHERE orderCompleteNoticeSent IS False AND discordMessageID IS NOT NULL")
                 changedOrders = shopCur.fetchall()
@@ -757,6 +763,7 @@ def discord_bot():
             sys.exit(1)
 
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         dbCur.execute(
             "SELECT discordID, conanPlayer, conanUserId, isAdmin, walletBalance, lastPaid, earnRateMultiplier, lastUpdated FROM accounts WHERE discordID =?",
             (author,))
@@ -800,6 +807,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
             dbCur.execute("SELECT roleValue, roleMultiplier, isAdmin FROM privileged_roles order by ID ASC")
             privelegedRoles = dbCur.fetchall()
             if privelegedRoles == None or len(privelegedRoles) == 0:
@@ -855,6 +863,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
             dbCur.execute("Select id, servername, serverbuffs_Channel FROM servers WHERE Enabled =True")
             servers = dbCur.fetchall()
             if servers != None:
@@ -914,7 +923,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
-            dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
             dbCur.execute("Select id, servername, wanted_Channel, map_url FROM servers WHERE Enabled =True")
             servers = dbCur.fetchall()
             if servers != None:
@@ -991,6 +1000,7 @@ def discord_bot():
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         dbCur.execute("SELECT isAdmin FROM accounts WHERE discordid =?", (user,))
         isAdmin = dbCur.fetchone()
         if isAdmin != None:
@@ -1017,6 +1027,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
 
             # update building piece tracking
             dbCur.execute("Select id, servername, BuildingPieceTracking_Channel FROM servers WHERE Enabled =True")
@@ -1264,6 +1275,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
 
             # update jail info
             dbCur.execute("Select id, servername, Jail_Channel, killlog_channel FROM servers WHERE Enabled =True")
@@ -1369,6 +1381,7 @@ def discord_bot():
                 print(f"Error connecting to MariaDB Platform: {e}")
                 sys.exit(1)
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
             dbCur.execute("Select id, servername, vaultrental_channel FROM servers WHERE Enabled =True")
             servers = dbCur.fetchall()
             if servers != None:
@@ -1422,6 +1435,7 @@ def discord_bot():
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         # find Discord users vault on current server
         dbCur.execute("SELECT lastServer FROM accounts WHERE discordid = '{}'".format(senderID))
         result = dbCur.fetchone()
@@ -1481,6 +1495,7 @@ def discord_bot():
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         # find Discord users vault on current server
         dbCur.execute("SELECT lastServer FROM accounts WHERE discordid = '{}'".format(senderID))
         result = dbCur.fetchone()
@@ -1580,6 +1595,7 @@ def discord_bot():
 
             # Get MariaCursor
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
 
             # insert code with associated discord ID
             try:
@@ -1620,6 +1636,7 @@ def discord_bot():
 
             # Get MariaCursor
             dbCur = dbCon.cursor()
+            dbCur.execute("SET NAMES utf8mb4;")
 
             # get wallet balance
             dbCur.execute("SELECT walletBalance FROM accounts WHERE discordid = ?", (discordID,))
@@ -1676,7 +1693,7 @@ def discord_bot():
                         sys.exit(1)
 
                     # Get MariaCursor
-                    shopCur = shopCon.cursor()
+                    shopCur = shopCon
                     shopCur.execute(f"SELECT walletBalance FROM accounts WHERE discordid =?", (senderDiscordID,))
                     senderCurrency = shopCur.fetchone()
                     if senderCurrency == None:
@@ -1774,6 +1791,7 @@ def discord_bot():
 
                         # Get MariaCursor
                         shopCur = shopCon.cursor()
+                        shopCur.execute("SET NAMES utf8mb4;")
 
                         for mentions in mentioned:
                             discordid = mentions.name
@@ -1866,6 +1884,7 @@ def discord_bot():
 
                     # Get MariaCursor
                     shopCur = shopCon.cursor()
+                    shopCur.execute("SET NAMES utf8mb4;")
 
                     for mentions in mentioned:
                         discordid = mentions.name

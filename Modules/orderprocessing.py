@@ -47,6 +47,7 @@ def processOrderLoop():
                 )
                 logger.info('Connected to MariaDB')
                 mariaCur = mariaCon.cursor()
+                mariaCur.execute("SET NAMES utf8mb4;")
                 discordID = purchaser
                 mariaCur.execute(
                     "SELECT id, isactive, activateCommand, deactivateCommand, lastActivated, endTime FROM server_buffs WHERE id = ?",
@@ -137,6 +138,7 @@ def processOrderLoop():
             sys.exit(1)
         logger.info('Connected to MariaDB')
         shopCur = shopCon.cursor()
+        shopCur.execute("SET NAMES utf8mb4;")
         now = datetime.now()
         eligibleProcessTime = now - timedelta(minutes=5)
 

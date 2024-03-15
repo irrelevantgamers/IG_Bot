@@ -21,6 +21,7 @@ def connect_mariadb():
         sys.exit(1)
     print("Connected to MariaDB Platform")
     mariaCur = mariaCon.cursor()
+    mariaCur.execute("SET NAMES utf8mb4;")
 
 
 def close_mariaDB():

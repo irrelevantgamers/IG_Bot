@@ -29,6 +29,7 @@ def watch_game_db():
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         file_path_db = config.Server_Game_DB_Location
         gamedbCon = sqlite3.connect(file_path_db)
         gamedbCur = gamedbCon.cursor()

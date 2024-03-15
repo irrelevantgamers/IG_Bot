@@ -36,6 +36,7 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 mariaCur = mariaCon.cursor()
+                mariaCur.execute("SET NAMES utf8mb4;")
 
             def close_mariaDB():
                 mariaCur.close()
@@ -112,6 +113,7 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
+                dbCur.execute("SET NAMES utf8mb4;")
                 dbCur.execute(
                     "SELECT discordID, discordObjID, registrationcode FROM registration_codes WHERE curstatus = FALSE")
                 results = dbCur.fetchall()
@@ -178,6 +180,7 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
+                dbCur.execute("SET NAMES utf8mb4;")
                 # find user
                 dbCur.execute(
                     "SELECT platformid FROM {server}_currentusers WHERE player=?".format(server=config.Server_Name),
@@ -247,6 +250,7 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
+                dbCur.execute("SET NAMES utf8mb4;")
                 # get player's current location
                 # open db connection
                 connection = sqlite3.connect(config.Server_Game_DB_Location)
@@ -307,6 +311,7 @@ def game_log_watcher():
                     print(f"Error connecting to MariaDB Platform: {e}")
                     sys.exit(1)
                 dbCur = dbCon.cursor()
+                dbCur.execute("SET NAMES utf8mb4;")
                 # get player's current location
                 # open db connection
                 connection = sqlite3.connect(config.Server_Game_DB_Location)

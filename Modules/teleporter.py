@@ -51,6 +51,7 @@ def TeleportRequestWatcher():
             logger.info('Error connecting to MariaDB Platform: %s', e)
             sys.exit(1)
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         # look for teleport requests
         dbCur.execute("Select id, servername FROM servers WHERE Enabled =True")
         servers = dbCur.fetchall()
@@ -145,6 +146,7 @@ def CancelAllTeleportRequests(server):
         print(f"Error connecting to MariaDB Platform: {e}")
         sys.exit(1)
     dbCur = dbCon.cursor()
+    dbCur.execute("SET NAMES utf8mb4;")
     dbCur.execute("UPDATE {servername}_teleport_requests SET completed =True".format(servername=server))
     dbCon.commit()
     dbCon.close()

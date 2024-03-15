@@ -25,6 +25,7 @@ def connect_mariadb():
         sys.exit(1)
 
     mariaCur = mariaCon.cursor()
+    mariaCur.execute("SET NAMES utf8mb4;")
 
 
 def close_mariaDB():

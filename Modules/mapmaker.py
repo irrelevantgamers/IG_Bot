@@ -30,6 +30,7 @@ def create_conan_maps():
             sys.exit(1)
 
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         dbCur.execute("SELECT ID, serverName FROM servers WHERE enabled =True")
         enabledServers = dbCur.fetchall()
 

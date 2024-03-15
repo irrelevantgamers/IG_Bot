@@ -31,6 +31,7 @@ def connect_mariadb():
         print(f"Error connecting to MariaDB Platform: {e}")
         sys.exit(1)
     mariaCur = mariaCon.cursor()
+    mariaCur.execute("SET NAMES utf8mb4;")
 
 
 def close_mariaDB():
@@ -59,6 +60,7 @@ def kill_stream():
             sys.exit(1)
 
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         dbCur.execute(
             "SELECT databaseLocation, Killlog_Last_Event_Time, serverName FROM servers WHERE serverName = ?",
             (config.Server_Name,))

@@ -26,6 +26,7 @@ def WatchForServerSettings():
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         dbCur = dbCon.cursor()
+        dbCur.execute("SET NAMES utf8mb4;")
         dbCur.execute(
             "SELECT id, buffname, isactive, lastActivated, endTime, lastActivatedBy, deactivateCommand FROM server_buffs WHERE serverName =?",
             (config.Server_Name,))

@@ -28,6 +28,7 @@ def syncPlayers(serverid):
         sys.exit(1)
 
     syncCur = syncCon.cursor()
+    syncCur.execute("SET NAMES utf8mb4;")
     print(f"Syncing current users for server id {serverid}")
     # get server config from db
     syncCur.execute(
@@ -166,6 +167,7 @@ def runSync(force):
         sys.exit(1)
 
     runSyncCur = runSyncCon.cursor()
+    runSyncCur.execute("SET NAMES utf8mb4;")
     runSyncCur.execute("Select ID, lastUserSync FROM servers WHERE Enabled =TRUE and serverName =?",
                        (config.Server_Name,))
     servers = runSyncCur.fetchall()
